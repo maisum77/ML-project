@@ -14,6 +14,7 @@ async def process_single_post(post_id: str):
     result = preprocessor.preprocess(text)
 
     cleaned_doc = {
+        "id": post_id,
         "original_id": post_id,
         "source": post.get("source"),
         "platform": post.get("platform"),
@@ -39,11 +40,10 @@ async def process_single_post(post_id: str):
 
 
 async def process_batch(limit: int = 100):
-    pipeline = [
+    cursor = raw_posts_collection.aggregate([
         {"$match": {"processed": {"$ne": True}}},
-        {"$limit": limit}
-    ]
-    posts = await raw_posts_collection.aggregate(pipeline).to_list(length=limit)
+    ])
+    posts = await cursor.to_list(length=limit)
 
     results = []
     for post in posts:

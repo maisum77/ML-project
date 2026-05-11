@@ -23,7 +23,8 @@ async def export_data(
         import io
         output = io.StringIO()
         if posts:
-            writer = csv.DictWriter(output, fieldnames=posts[0].keys())
+            keys = list(posts[0].keys())
+            writer = csv.DictWriter(output, fieldnames=keys)
             writer.writeheader()
             for post in posts:
                 writer.writerow({k: str(v) for k, v in post.items()})

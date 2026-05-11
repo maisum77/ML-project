@@ -1,5 +1,6 @@
 import sys
-sys.path.insert(0, r"C:\Users\Aon-PC\Desktop\ML project")
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import asyncio
 from backend.app.core.database import init_db, seed_demo_data, raw_posts_collection

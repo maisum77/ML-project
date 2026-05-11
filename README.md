@@ -1,20 +1,40 @@
 # SocialPulse AI
 
-Real-Time Misinformation & Trend Analyzer
+Real-Time Misinformation & Trend Analyzer (Serverless Architecture)
 
 ## Overview
 
-SocialPulse AI is a machine learning-powered platform that aggregates real-time data from Reddit and X (Twitter) to detect hot topics, analyze sentiment, identify fake vs. real news, and surface emerging trends through an intuitive analytics dashboard.
+SocialPulse AI is an on-demand platform that fetches real-time data from Reddit and X (Twitter), analyzes sentiment, detects fake news, and surfaces trends through an analytics dashboard. Built fully serverless on AWS.
+
+## How It Works
+
+```
+User visits website
+      │
+      ▼
+Next.js (Amplify) → API Gateway → Lambda (FastAPI)
+      │                                │
+      │                    ┌───────────┤
+      │                    ▼           ▼
+      │              Reddit/Twitter  VADER Sentiment
+      │                    │           │
+      │                    ▼           ▼
+      │               DynamoDB    ──► Response
+      │
+      ▼
+Dashboard renders with fresh data
+```
+
+Every API call triggers on-demand data collection + analysis. No polling, no persistent servers.
 
 ## Features
 
-- **Real-time Data Collection** - Reddit (PRAW) and X/Twitter (Tweepy) APIs with 15-minute polling
-- **Fake News Detection** - Fine-tuned RoBERTa model for binary classification with confidence scores
-- **Sentiment Analysis** - DistilBERT (3-class) with VADER fallback for lightweight processing
-- **Topic Modeling** - BERTopic for dynamic embedding-based topic clustering
-- **Fact-Check Verification** - Google Fact Check Tools API + ClaimBuster integration
-- **Analytics Dashboard** - Live trending topics, sentiment charts, and searchable post explorer
-- **REST API** - FastAPI backend with rate limiting and API key authentication
+- **On-demand Data Collection** - Fetches Reddit/Twitter posts in real-time when you request
+- **Sentiment Analysis** - VADER-based positive/negative/neutral classification
+- **Fake News Detection** - Keyword + pattern-based classifier
+- **Fact-Check Verification** - Google Fact Check Tools API + ClaimBuster
+- **Analytics Dashboard** - Trending topics, sentiment charts, post explorer
+- **Serverless** - API Gateway + Lambda + DynamoDB. Zero maintenance.
 
 ## Tech Stack
 
@@ -22,10 +42,10 @@ SocialPulse AI is a machine learning-powered platform that aggregates real-time 
 |-------|------------|
 | Backend | FastAPI (Python) |
 | Frontend | Next.js + React + Chart.js |
-| Database | MongoDB |
-| Task Queue | Celery + Redis |
-| ML Models | RoBERTa, DistilBERT, BERTopic, VADER |
-| NLP | spaCy, HuggingFace Transformers |
+| Database | AWS DynamoDB |
+| Hosting | AWS Amplify (Frontend) + API Gateway + Lambda (Backend) |
+| Sentiment | VADER |
+| NLP | spaCy |
 
 ## Quick Start
 
@@ -33,16 +53,13 @@ SocialPulse AI is a machine learning-powered platform that aggregates real-time 
 
 - Python 3.10+
 - Node.js 18+
-- MongoDB (local or Atlas)
-- Redis
-- Docker (optional, for MongoDB + Redis)
+- AWS Account
 
 ### 1. Clone & Setup
 
 ```bash
-cd "ML project"
 python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+source venv/bin/activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 ```
@@ -51,83 +68,68 @@ python -m spacy download en_core_web_sm
 
 ```bash
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your AWS credentials and API keys
 ```
 
-### 3. Start Infrastructure
+### 3. Run Locally
 
 ```bash
-docker-compose up -d
+uvicorn backend.app.main:app --reload --port 8000
 ```
 
-### 4. Run Backend
+Frontend:
+```bash
+cd frontend && npm install && npm run dev
+```
+
+### 4. Deploy (Serverless)
 
 ```bash
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Install AWS SAM CLI
+# sam build && sam deploy --guided
 ```
 
-### 5. Run Frontend
+This creates:
+- Lambda function (1 GB RAM, 120s timeout)
+- API Gateway HTTP API
+- 5 DynamoDB tables (PAY_PER_REQUEST)
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### 5. Deploy Frontend
 
-### 6. Start Data Collection
+Push to GitHub → Connect to AWS Amplify → `amplify.yml` auto-deploys Next.js.
 
-```bash
-python -c "from data_collection.scheduler import start_scheduler; start_scheduler()"
-```
+Set `NEXT_PUBLIC_API_URL` in Amplify to the API Gateway URL from SAM output.
 
 ## API Documentation
 
-Once the backend is running, visit:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-### Endpoints
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /api/v1/trending | Get trending topics |
-| GET | /api/v1/trending/realtime | Real-time trending (last N hours) |
-| GET | /api/v1/sentiment/{topic} | Sentiment for a specific topic |
+| GET | /api/v1/trending | Fresh trending topics (fetches live data) |
+| GET | /api/v1/trending/realtime | Real-time trending |
+| GET | /api/v1/sentiment/{topic} | Sentiment for a topic |
 | GET | /api/v1/sentiment/overall | Overall sentiment breakdown |
-| POST | /api/v1/classify | Classify text as fake/real + sentiment |
-| GET | /api/v1/feed | Get post feed with filters |
-| GET | /api/v1/export | Export data as JSON or CSV |
+| POST | /api/v1/classify | Classify text (fake/real + sentiment) |
+| GET | /api/v1/feed | Post feed with filters |
+| GET | /api/v1/export | Export as JSON/CSV |
 
 ## Project Structure
 
 ```
-ML project/
 ├── backend/              # FastAPI backend
+│   ├── lambda_handler.py # Mangum → Lambda entry point
 │   └── app/
 │       ├── api/          # API routes
-│       ├── core/         # Config, database, security
+│       ├── core/         # Config, DynamoDB, security
 │       ├── schemas/      # Pydantic models
 │       └── services/     # Business logic
-├── data_collection/      # Reddit + Twitter data collectors
-├── data_processing/      # Text preprocessing pipeline
-├── ml_models/            # ML model training & inference
-│   ├── fake_news/        # RoBERTa fake news classifier
-│   ├── sentiment/        # DistilBERT sentiment analyzer
-│   └── topic_modeling/   # BERTopic topic clustering
-├── fact_check/           # Google Fact Check + ClaimBuster
+├── data_collection/      # Reddit + Twitter collectors (on-demand)
+├── data_processing/      # Text preprocessing (spaCy + VADER)
+├── ml_models/            # ML models (VADER sentiment, keyword fake-news)
 ├── frontend/             # Next.js dashboard
-├── tests/                # Test suite
-├── scripts/              # Utility scripts
-└── deployment/           # Docker & deployment configs
+├── template.yaml         # SAM: Lambda + API Gateway + DynamoDB
+├── amplify.yml           # Amplify Hosting config
+└── scripts/              # Utility scripts
 ```
-
-## API Keys Required
-
-- **Reddit**: Create app at https://www.reddit.com/prefs/apps
-- **X/Twitter**: Developer account at https://developer.twitter.com
-- **Google Fact Check**: Enable API at Google Cloud Console
-- **ClaimBuster**: Register at https://claimbuster.idaholab.ai
 
 ## License
 

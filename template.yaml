@@ -1,0 +1,228 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+
+  AwsAccessKeyId:
+    Type: String
+    NoEcho: true
+  AwsSecretAccessKey:
+    Type: String
+    NoEcho: true
+  RedditClientId:
+    Type: String
+    Default: ""
+  RedditClientSecret:
+    Type: String
+    Default: ""
+  XBearerToken:
+    Type: String
+    Default: ""
+  XApiKey:
+    Type: String
+    Default: ""
+  XApiSecret:
+    Type: String
+    Default: ""
+  XAccessToken:
+    Type: String
+    Default: ""
+  XAccessTokenSecret:
+    Type: String
+    Default: ""
+
+Resources:
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "socialpulse-api-${Stage}"
+      Handler: backend.lambda_handler.handler
+      Runtime: python3.11
+      Timeout: 120
+      MemorySize: 1024
+      Environment:
+        Variables:
+          APP_ENV: !Ref Stage
+          AWS_REGION: us-east-1
+          DYNAMODB_RAW_POSTS_TABLE: !Ref RawPostsTable
+          DYNAMODB_CLEANED_POSTS_TABLE: !Ref CleanedPostsTable
+          DYNAMODB_TRENDS_TABLE: !Ref TrendsTable
+          DYNAMODB_SENTIMENT_TABLE: !Ref SentimentTable
+          DYNAMODB_FACT_CHECKS_TABLE: !Ref FactChecksTable
+          DYNAMODB_PROPAGATION_TABLE: !Ref PropagationTable
+          REDDIT_CLIENT_ID: !Ref RedditClientId
+          REDDIT_CLIENT_SECRET: !Ref RedditClientSecret
+          X_BEARER_TOKEN: !Ref XBearerToken
+          X_API_KEY: !Ref XApiKey
+          X_API_SECRET: !Ref XApiSecret
+          X_ACCESS_TOKEN: !Ref XAccessToken
+          X_ACCESS_TOKEN_SECRET: !Ref XAccessTokenSecret
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RawPostsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CleanedPostsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TrendsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SentimentTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FactChecksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PropagationTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+
+  RawPostsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "socialpulse_raw_posts_${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: platform
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+        - AttributeName: processed
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: platform-index
+          KeySchema:
+            - AttributeName: platform
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: processed-index
+          KeySchema:
+            - AttributeName: processed
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  CleanedPostsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "socialpulse_cleaned_posts_${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: platform
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: platform-index
+          KeySchema:
+            - AttributeName: platform
+              KeyType: HASH
+            - AttributeName: id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  TrendsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "socialpulse_trends_${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: topic_id
+          AttributeType: S
+        - AttributeName: platform
+          AttributeType: S
+      KeySchema:
+        - AttributeName: topic_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: platform-index
+          KeySchema:
+            - AttributeName: platform
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  SentimentTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "socialpulse_sentiment_${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: label
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: label-index
+          KeySchema:
+            - AttributeName: label
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  FactChecksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "socialpulse_fact_checks_${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  PropagationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "socialpulse_propagation_${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: topic_hash
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: topic-index
+          KeySchema:
+            - AttributeName: topic_hash
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"

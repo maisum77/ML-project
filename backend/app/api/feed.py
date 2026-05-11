@@ -20,6 +20,11 @@ async def get_feed(
     cursor = raw_posts_collection.find(query).sort("upvotes", -1).skip(offset).limit(limit)
     posts = await cursor.to_list(length=limit)
 
+    if sentiment:
+        posts = [p for p in posts if p.get("sentiment", {}).get("label") == sentiment]
+    if classification:
+        posts = [p for p in posts if p.get("classification") == classification]
+
     total = await raw_posts_collection.count_documents(query)
 
     return {

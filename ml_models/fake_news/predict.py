@@ -1,47 +1,36 @@
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
-from typing import Optional
-import os
+import re
 
-MODEL_NAME = "roberta-base"
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "saved_model")
-
-_classifier = None
-
-
-def get_classifier():
-    global _classifier
-    if _classifier is None:
-        try:
-            _classifier = pipeline(
-                "text-classification",
-                model=MODEL_PATH,
-                tokenizer=MODEL_PATH,
-                max_length=512,
-                truncation=True,
-            )
-        except Exception:
-            _classifier = pipeline(
-                "text-classification",
-                model=MODEL_NAME,
-                tokenizer=MODEL_NAME,
-                max_length=512,
-                truncation=True,
-            )
-    return _classifier
+_fake_keywords = [
+    "shocking truth", "they don't want you to know", "wake up",
+    "conspiracy", "hoax", "secret cure", "big pharma", "deep state",
+    "100% proven", "miracle", "doctors hate", "one weird trick",
+    "government hiding", "banned video", "censored",
+]
 
 
 def predict_fake_news(text: str) -> dict:
-    classifier = get_classifier()
-    result = classifier(text)[0]
-    label = result["label"]
-    confidence = result["score"]
+    text_lower = text.lower()
+    score = 0
 
-    if "NEGATIVE" in label or "FAKE" in label.upper():
-        classification = "fake"
+    for kw in _fake_keywords:
+        if kw in text_lower:
+            score += 20
+
+    if re.search(r"(?i)(click|share|repost)\s+(here|now|this)", text):
+        score += 15
+
+    if re.search(r"(?i)(?!it'?s\b)(\b\w{12,}\b)", text):
+        score += 5
+
+    exclamation_count = text.count("!")
+    if exclamation_count > 2:
+        score += min(exclamation_count * 5, 15)
+
+    if any(w in text_lower for w in ["100%", "guaranteed", "proven", "confirmed"]):
+        score += 10
+
+    confidence = min(score, 99)
+    if confidence > 40:
+        return {"label": "fake", "confidence": confidence}
     else:
-        classification = "real"
-
-    return {
-        "label": classification,
-        "confidence": round(confidence * 100, 2),
-    }
+        return {"label": "real", "confidence": 100 - confidence}

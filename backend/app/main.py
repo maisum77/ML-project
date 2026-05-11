@@ -1,26 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 from backend.app.api.router import router as api_router
 from backend.app.core.config import get_settings
-from backend.app.core.database import init_db, seed_demo_data
 
 settings = get_settings()
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await init_db()
-    await seed_demo_data()
-    yield
-
 app = FastAPI(
     title="SocialPulse AI",
-    description="Real-Time Misinformation & Trend Analyzer API",
+    description="Real-Time Misinformation & Trend Analyzer",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -32,6 +22,13 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+async def startup():
+    from backend.app.core.database import init_db, seed_demo_data
+    await init_db()
+    await seed_demo_data()
 
 
 @app.get("/")

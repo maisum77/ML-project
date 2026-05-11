@@ -1,0 +1,31 @@
+# ML Training Dependencies (local/GPU only, NOT for Lambda)
+# Install with: pip install -r requirements-ml.txt
+
+# Core ML
+torch==2.6.0
+transformers==4.48.0
+scikit-learn==1.6.1
+spacy==3.8.7
+bertopic==0.16.4
+datasets==3.3.0
+vaderSentiment==3.3.2
+langdetect==1.0.9
+numpy==2.2.1
+pandas==2.2.3
+
+# Training utilities
+accelerate==1.4.0
+evaluate==0.4.3
+
+# Visualization
+matplotlib==3.10.0
+seaborn==0.13.2
+plotly==6.0.0
+
+# Experiment tracking
+wandb==0.19.0
+
+# Scientific / NLP
+nltk==3.9.1
+sentencepiece==0.2.0
+protobuf==5.29.0

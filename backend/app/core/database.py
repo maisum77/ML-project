@@ -1,198 +1,86 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from backend.app.core.config import get_settings
-from datetime import datetime, timezone
+from backend.app.core.dynamodb import raw_posts, cleaned_posts, trends, sentiment, fact_checks, propagation
 
-settings = get_settings()
-
-mongodb_available = False
-client = None
-db = None
-
-_in_memory_data = {
-    "raw_posts": [],
-    "cleaned_posts": [],
-    "trends": [],
-    "fact_checks": [],
-    "sentiment": [],
-}
-
-
-def _serialize_value(v):
-    if isinstance(v, datetime):
-        return v.isoformat()
-    return v
-
-
-def _serialize_doc(doc):
-    return {k: _serialize_value(v) for k, v in doc.items()}
-
-
-class InMemoryCursor:
-    def __init__(self, data):
-        self.data = [_serialize_doc(d) for d in data]
-        self._sort_field = None
-        self._sort_order = 1
-        self._skip = 0
-        self._limit = None
-
-    def sort(self, field, order=1):
-        self._sort_field = field
-        self._sort_order = order
-        return self
-
-    def skip(self, count):
-        self._skip = count
-        return self
-
-    def limit(self, count):
-        self._limit = count
-        return self
-
-    async def to_list(self, length=None):
-        result = list(self.data)
-        if self._sort_field:
-            result.sort(key=lambda x: x.get(self._sort_field, 0), reverse=(self._sort_order == -1))
-        result = result[self._skip:]
-        if self._limit:
-            result = result[:self._limit]
-        return result
-
-
-class InMemoryCollection:
-    def __init__(self, name):
-        self.name = name
-
-    def find(self, query=None, **kwargs):
-        data = _in_memory_data.get(self.name, [])
-        if query:
-            filtered = []
-            for item in data:
-                match = True
-                for k, v in query.items():
-                    if item.get(k) != v:
-                        match = False
-                        break
-                if match:
-                    filtered.append(item)
-            return InMemoryCursor(filtered)
-        return InMemoryCursor(data)
-
-    async def find_one(self, query=None):
-        data = _in_memory_data.get(self.name, [])
-        if not query:
-            return _serialize_doc(data[0]) if data else None
-        for item in data:
-            match = True
-            for k, v in query.items():
-                if item.get(k) != v:
-                    match = False
-                    break
-            if match:
-                return _serialize_doc(item)
-        return None
-
-    async def insert_one(self, doc):
-        _in_memory_data[self.name].append(doc)
-        return doc
-
-    async def update_one(self, query, update, upsert=False):
-        data = _in_memory_data.get(self.name, [])
-        for item in data:
-            match = True
-            for k, v in query.items():
-                if item.get(k) != v:
-                    match = False
-                    break
-            if match:
-                set_data = update.get("$set", {})
-                item.update(set_data)
-                return type("obj", (object,), {"modified_count": 1})()
-        if upsert:
-            new_doc = dict(query)
-            new_doc.update(update.get("$set", {}))
-            _in_memory_data[self.name].append(new_doc)
-        return type("obj", (object,), {"modified_count": 0})()
-
-    async def count_documents(self, query=None):
-        data = _in_memory_data.get(self.name, [])
-        if not query:
-            return len(data)
-        count = 0
-        for item in data:
-            match = True
-            for k, v in query.items():
-                if item.get(k) != v:
-                    match = False
-                    break
-            if match:
-                count += 1
-        return count
-
-    def aggregate(self, pipeline):
-        data = _in_memory_data.get(self.name, [])
-        return InMemoryCursor(data)
-
-
-class CollectionProxy:
-    def __init__(self, name):
-        self.name = name
-        self._collection = None
-
-    def _get(self):
-        if self._collection is None:
-            if mongodb_available and db is not None:
-                self._collection = db[self.name]
-            else:
-                self._collection = InMemoryCollection(self.name)
-        return self._collection
-
-    def find(self, query=None, **kwargs):
-        return self._get().find(query, **kwargs)
-
-    async def find_one(self, query=None):
-        return await self._get().find_one(query)
-
-    async def insert_one(self, doc):
-        return await self._get().insert_one(doc)
-
-    async def update_one(self, query, update, upsert=False):
-        return await self._get().update_one(query, update, upsert)
-
-    async def count_documents(self, query=None):
-        return await self._get().count_documents(query)
-
-    def aggregate(self, pipeline):
-        return self._get().aggregate(pipeline)
-
-
-raw_posts_collection = CollectionProxy("raw_posts")
-cleaned_posts_collection = CollectionProxy("cleaned_posts")
-trends_collection = CollectionProxy("trends")
-fact_checks_collection = CollectionProxy("fact_checks")
-sentiment_collection = CollectionProxy("sentiment")
+raw_posts_collection = raw_posts
+cleaned_posts_collection = cleaned_posts
+trends_collection = trends
+sentiment_collection = sentiment
+fact_checks_collection = fact_checks
+propagation_collection = propagation
 
 
 async def init_db():
-    global client, db, mongodb_available
-
-    try:
-        client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=3000)
-        await client.admin.command("ping")
-        db = client[settings.mongodb_db_name]
-        mongodb_available = True
-        print("[Database] Connected to MongoDB")
-    except Exception as e:
-        print(f"[Database] MongoDB not available, using in-memory storage")
-        mongodb_available = False
+    print("[Database] Using AWS DynamoDB")
 
 
 async def get_db():
-    return db
+    return True
 
 
 async def seed_demo_data():
+    from datetime import datetime, timezone
+
+    existing = await raw_posts_collection.count_documents({})
+    if existing > 0:
+        return
+
     now = datetime.now(timezone.utc).isoformat()
     demo_posts = [
+        {
+            "id": "twitter_demo_origin",
+            "source": "twitter",
+            "platform": "twitter",
+            "title": None,
+            "text": "Breaking: New study shows social media affects mental health significantly. More research needed.",
+            "author": "WHO",
+            "upvotes": 0,
+            "comments_count": 89,
+            "retweets": 456,
+            "likes": 1203,
+            "url": "https://twitter.com/i/status/demo_origin",
+            "subreddit": None,
+            "hashtags": ["#MentalHealth", "#Research"],
+            "created_at": now,
+            "fetched_at": now,
+            "processed": True,
+            "sentiment": {"label": "neutral", "score": 0.1},
+            "parent_id": None,
+            "origin_post_id": "twitter_demo_origin",
+            "propagation_depth": 0,
+            "author_verified": True,
+            "author_type": "official",
+            "authority_score": 95,
+            "author_location": "Geneva, Switzerland",
+            "location_lat": 46.2044,
+            "location_lng": 6.1432,
+        },
+        {
+            "id": "twitter_demo_retweet1",
+            "source": "twitter",
+            "platform": "twitter",
+            "title": None,
+            "text": "RT @WHO: Breaking: New study shows social media affects mental health significantly.",
+            "author": "NYTimes",
+            "upvotes": 0,
+            "comments_count": 34,
+            "retweets": 234,
+            "likes": 890,
+            "url": "https://twitter.com/i/status/demo_rt1",
+            "subreddit": None,
+            "hashtags": ["#MentalHealth"],
+            "created_at": now,
+            "fetched_at": now,
+            "processed": True,
+            "sentiment": {"label": "neutral", "score": 0.05},
+            "parent_id": "twitter_demo_origin",
+            "origin_post_id": "twitter_demo_origin",
+            "propagation_depth": 1,
+            "author_verified": True,
+            "author_type": "journalist",
+            "authority_score": 80,
+            "author_location": "New York, USA",
+            "location_lat": 40.7128,
+            "location_lng": -74.006,
+        },
         {
             "id": "reddit_demo_1",
             "source": "reddit",
@@ -209,25 +97,45 @@ async def seed_demo_data():
             "hashtags": ["#AI", "#Healthcare"],
             "created_at": now,
             "fetched_at": now,
+            "processed": True,
             "sentiment": {"label": "positive", "score": 0.85},
+            "parent_id": None,
+            "origin_post_id": "reddit_demo_1",
+            "propagation_depth": 0,
+            "author_verified": False,
+            "author_type": "public",
+            "authority_score": 30,
+            "author_location": None,
+            "location_lat": None,
+            "location_lng": None,
         },
         {
-            "id": "twitter_demo_1",
+            "id": "twitter_demo_retweet2",
             "source": "twitter",
             "platform": "twitter",
             "title": None,
-            "text": "Breaking: New study shows social media affects mental health significantly. More research needed.",
-            "author": "news_bot",
+            "text": "RT @NYTimes: Mental health study shows alarming trends in social media usage.",
+            "author": "health_reporter",
             "upvotes": 0,
-            "comments_count": 89,
-            "retweets": 456,
-            "likes": 1203,
-            "url": "https://twitter.com/i/status/demo1",
+            "comments_count": 12,
+            "retweets": 45,
+            "likes": 234,
+            "url": "https://twitter.com/i/status/demo_rt2",
             "subreddit": None,
-            "hashtags": ["#MentalHealth", "#Research"],
+            "hashtags": ["#MentalHealth"],
             "created_at": now,
             "fetched_at": now,
-            "sentiment": {"label": "neutral", "score": 0.1},
+            "processed": True,
+            "sentiment": {"label": "negative", "score": -0.3},
+            "parent_id": "twitter_demo_retweet1",
+            "origin_post_id": "twitter_demo_origin",
+            "propagation_depth": 2,
+            "author_verified": False,
+            "author_type": "public",
+            "authority_score": 30,
+            "author_location": "London, UK",
+            "location_lat": 51.5074,
+            "location_lng": -0.1278,
         },
         {
             "id": "reddit_demo_2",
@@ -245,7 +153,17 @@ async def seed_demo_data():
             "hashtags": ["#FakeNews", "#Research"],
             "created_at": now,
             "fetched_at": now,
+            "processed": True,
             "sentiment": {"label": "negative", "score": -0.6},
+            "parent_id": None,
+            "origin_post_id": "reddit_demo_2",
+            "propagation_depth": 0,
+            "author_verified": False,
+            "author_type": "public",
+            "authority_score": 30,
+            "author_location": None,
+            "location_lat": None,
+            "location_lng": None,
         },
         {
             "id": "twitter_demo_2",
@@ -263,7 +181,17 @@ async def seed_demo_data():
             "hashtags": ["#Solar", "#CleanEnergy"],
             "created_at": now,
             "fetched_at": now,
+            "processed": True,
             "sentiment": {"label": "positive", "score": 0.92},
+            "parent_id": None,
+            "origin_post_id": "twitter_demo_2",
+            "propagation_depth": 0,
+            "author_verified": False,
+            "author_type": "public",
+            "authority_score": 30,
+            "author_location": "Berlin, Germany",
+            "location_lat": 52.52,
+            "location_lng": 13.405,
         },
         {
             "id": "reddit_demo_3",
@@ -281,42 +209,47 @@ async def seed_demo_data():
             "hashtags": ["#ClimateChange"],
             "created_at": now,
             "fetched_at": now,
+            "processed": True,
             "sentiment": {"label": "negative", "score": -0.75},
+            "parent_id": None,
+            "origin_post_id": "reddit_demo_3",
+            "propagation_depth": 0,
+            "author_verified": False,
+            "author_type": "public",
+            "authority_score": 30,
+            "author_location": None,
+            "location_lat": None,
+            "location_lng": None,
         },
     ]
 
+    demo_propagation = [
+        {"id": "prop_mental_health_0", "topic_hash": "mental_health_study", "post_id": "twitter_demo_origin", "depth": 0, "author": "WHO", "author_type": "official", "authority_score": 95},
+        {"id": "prop_mental_health_1", "topic_hash": "mental_health_study", "post_id": "twitter_demo_retweet1", "depth": 1, "author": "NYTimes", "author_type": "journalist", "authority_score": 80},
+        {"id": "prop_mental_health_2", "topic_hash": "mental_health_study", "post_id": "twitter_demo_retweet2", "depth": 2, "author": "health_reporter", "author_type": "public", "authority_score": 30},
+    ]
+
     demo_trends = [
-        {"_id": "AI & Technology", "count": 1523, "avg_engagement": 892.5, "platform": "reddit"},
-        {"_id": "Climate Change", "count": 987, "avg_engagement": 654.2, "platform": "reddit"},
-        {"_id": "Mental Health", "count": 756, "avg_engagement": 432.1, "platform": "twitter"},
-        {"_id": "Renewable Energy", "count": 543, "avg_engagement": 321.8, "platform": "twitter"},
-        {"_id": "Space Exploration", "count": 432, "avg_engagement": 289.4, "platform": "reddit"},
+        {"topic_id": "AI & Technology", "count": 1523, "avg_engagement": 892.5, "platform": "reddit"},
+        {"topic_id": "Climate Change", "count": 987, "avg_engagement": 654.2, "platform": "reddit"},
+        {"topic_id": "Mental Health", "count": 756, "avg_engagement": 432.1, "platform": "twitter"},
+        {"topic_id": "Renewable Energy", "count": 543, "avg_engagement": 321.8, "platform": "twitter"},
+        {"topic_id": "Space Exploration", "count": 432, "avg_engagement": 289.4, "platform": "reddit"},
     ]
 
     demo_sentiment = [
-        {"_id": "positive", "count": 2},
-        {"_id": "neutral", "count": 1},
-        {"_id": "negative", "count": 2},
+        {"id": "sentiment_positive", "label": "positive", "count": 2},
+        {"id": "sentiment_neutral", "label": "neutral", "count": 1},
+        {"id": "sentiment_negative", "label": "negative", "count": 2},
     ]
 
-    if mongodb_available and db is not None:
-        existing = await db["raw_posts"].count_documents({})
-        if existing > 0:
-            return
-        for post in demo_posts:
-            await db["raw_posts"].insert_one(post)
-        for trend in demo_trends:
-            await db["trends"].insert_one(trend)
-        for s in demo_sentiment:
-            await db["sentiment"].insert_one(s)
-        print("[Database] Seeded demo data into MongoDB")
-    else:
-        if len(_in_memory_data["raw_posts"]) > 0:
-            return
-        for post in demo_posts:
-            await raw_posts_collection.insert_one(post)
-        for trend in demo_trends:
-            await trends_collection.insert_one(trend)
-        for s in demo_sentiment:
-            await sentiment_collection.insert_one(s)
-        print("[Database] Seeded demo data for in-memory storage")
+    for post in demo_posts:
+        await raw_posts_collection.insert_one(post)
+    for trend in demo_trends:
+        await trends_collection.insert_one(trend)
+    for s in demo_sentiment:
+        await sentiment_collection.insert_one(s)
+    for p in demo_propagation:
+        await propagation_collection.insert_one(p)
+
+    print(f"[Database] Seeded demo data into DynamoDB ({len(demo_posts)} posts, {len(demo_trends)} trends, {len(demo_propagation)} propagation chains)")

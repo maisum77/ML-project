@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 from backend.app.core.config import get_settings
 from backend.app.core.database import raw_posts_collection
+from data.location_mappings import get_location_for_subreddit
 
 settings = get_settings()
 
@@ -25,13 +26,15 @@ class RedditCollector:
         try:
             subreddit = self.reddit.subreddit(subreddit_name)
             for submission in subreddit.hot(limit=limit):
+                location = get_location_for_subreddit(subreddit_name)
+
                 post = {
                     "id": f"reddit_{submission.id}",
                     "source": "reddit",
                     "platform": "reddit",
                     "title": submission.title,
                     "text": submission.selftext or "",
-                    "author": str(submission.author),
+                    "author": str(submission.author) if submission.author else "unknown",
                     "upvotes": submission.score,
                     "comments_count": submission.num_comments,
                     "retweets": 0,
@@ -41,6 +44,15 @@ class RedditCollector:
                     "hashtags": self._extract_hashtags(submission.title),
                     "created_at": datetime.utcfromtimestamp(submission.created_utc),
                     "fetched_at": datetime.utcnow(),
+                    "parent_id": None,
+                    "origin_post_id": f"reddit_{submission.id}",
+                    "propagation_depth": 0,
+                    "author_verified": False,
+                    "author_type": "public",
+                    "authority_score": 30,
+                    "author_location": location["city"] if location else None,
+                    "location_lat": location["lat"] if location else None,
+                    "location_lng": location["lng"] if location else None,
                 }
                 posts.append(post)
         except Exception as e:
