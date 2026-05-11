@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from backend.app.core.config import get_settings
-from datetime import datetime
+from datetime import datetime, timezone
 
 settings = get_settings()
 
@@ -140,7 +140,7 @@ class CollectionProxy:
 
     def _get(self):
         if self._collection is None:
-            if mongodb_available and db:
+            if mongodb_available and db is not None:
                 self._collection = db[self.name]
             else:
                 self._collection = InMemoryCollection(self.name)
@@ -191,120 +191,132 @@ async def get_db():
 
 
 async def seed_demo_data():
-    if not mongodb_available and len(_in_memory_data["raw_posts"]) == 0:
-        now = datetime.utcnow().isoformat()
-        demo_posts = [
-            {
-                "id": "reddit_demo_1",
-                "source": "reddit",
-                "platform": "reddit",
-                "title": "AI breakthrough in medical diagnosis announced",
-                "text": "Researchers have developed a new AI system that can detect diseases with 99% accuracy.",
-                "author": "tech_user",
-                "upvotes": 1523,
-                "comments_count": 342,
-                "retweets": 0,
-                "likes": 0,
-                "url": "https://reddit.com/r/technology/demo1",
-                "subreddit": "technology",
-                "hashtags": ["#AI", "#Healthcare"],
-                "created_at": now,
-                "fetched_at": now,
-                "sentiment": {"label": "positive", "score": 0.85},
-            },
-            {
-                "id": "twitter_demo_1",
-                "source": "twitter",
-                "platform": "twitter",
-                "title": None,
-                "text": "Breaking: New study shows social media affects mental health significantly. More research needed.",
-                "author": "news_bot",
-                "upvotes": 0,
-                "comments_count": 89,
-                "retweets": 456,
-                "likes": 1203,
-                "url": "https://twitter.com/i/status/demo1",
-                "subreddit": None,
-                "hashtags": ["#MentalHealth", "#Research"],
-                "created_at": now,
-                "fetched_at": now,
-                "sentiment": {"label": "neutral", "score": 0.1},
-            },
-            {
-                "id": "reddit_demo_2",
-                "source": "reddit",
-                "platform": "reddit",
-                "title": "Fake news spreads faster than real news, study confirms",
-                "text": "A comprehensive study from MIT shows that false information spreads 6 times faster than truth on social platforms.",
-                "author": "science_fan",
-                "upvotes": 2891,
-                "comments_count": 567,
-                "retweets": 0,
-                "likes": 0,
-                "url": "https://reddit.com/r/science/demo2",
-                "subreddit": "science",
-                "hashtags": ["#FakeNews", "#Research"],
-                "created_at": now,
-                "fetched_at": now,
-                "sentiment": {"label": "negative", "score": -0.6},
-            },
-            {
-                "id": "twitter_demo_2",
-                "source": "twitter",
-                "platform": "twitter",
-                "title": None,
-                "text": "Exciting developments in renewable energy! Solar power costs hit record low worldwide.",
-                "author": "green_tech",
-                "upvotes": 0,
-                "comments_count": 45,
-                "retweets": 892,
-                "likes": 3421,
-                "url": "https://twitter.com/i/status/demo2",
-                "subreddit": None,
-                "hashtags": ["#Solar", "#CleanEnergy"],
-                "created_at": now,
-                "fetched_at": now,
-                "sentiment": {"label": "positive", "score": 0.92},
-            },
-            {
-                "id": "reddit_demo_3",
-                "source": "reddit",
-                "platform": "reddit",
-                "title": "Climate change report shows alarming trends",
-                "text": "The latest IPCC report indicates that global temperatures could rise by 2.7C by 2100 without immediate action.",
-                "author": "climate_watch",
-                "upvotes": 4521,
-                "comments_count": 1203,
-                "retweets": 0,
-                "likes": 0,
-                "url": "https://reddit.com/r/worldnews/demo3",
-                "subreddit": "worldnews",
-                "hashtags": ["#ClimateChange"],
-                "created_at": now,
-                "fetched_at": now,
-                "sentiment": {"label": "negative", "score": -0.75},
-            },
-        ]
+    now = datetime.now(timezone.utc).isoformat()
+    demo_posts = [
+        {
+            "id": "reddit_demo_1",
+            "source": "reddit",
+            "platform": "reddit",
+            "title": "AI breakthrough in medical diagnosis announced",
+            "text": "Researchers have developed a new AI system that can detect diseases with 99% accuracy.",
+            "author": "tech_user",
+            "upvotes": 1523,
+            "comments_count": 342,
+            "retweets": 0,
+            "likes": 0,
+            "url": "https://reddit.com/r/technology/demo1",
+            "subreddit": "technology",
+            "hashtags": ["#AI", "#Healthcare"],
+            "created_at": now,
+            "fetched_at": now,
+            "sentiment": {"label": "positive", "score": 0.85},
+        },
+        {
+            "id": "twitter_demo_1",
+            "source": "twitter",
+            "platform": "twitter",
+            "title": None,
+            "text": "Breaking: New study shows social media affects mental health significantly. More research needed.",
+            "author": "news_bot",
+            "upvotes": 0,
+            "comments_count": 89,
+            "retweets": 456,
+            "likes": 1203,
+            "url": "https://twitter.com/i/status/demo1",
+            "subreddit": None,
+            "hashtags": ["#MentalHealth", "#Research"],
+            "created_at": now,
+            "fetched_at": now,
+            "sentiment": {"label": "neutral", "score": 0.1},
+        },
+        {
+            "id": "reddit_demo_2",
+            "source": "reddit",
+            "platform": "reddit",
+            "title": "Fake news spreads faster than real news, study confirms",
+            "text": "A comprehensive study from MIT shows that false information spreads 6 times faster than truth on social platforms.",
+            "author": "science_fan",
+            "upvotes": 2891,
+            "comments_count": 567,
+            "retweets": 0,
+            "likes": 0,
+            "url": "https://reddit.com/r/science/demo2",
+            "subreddit": "science",
+            "hashtags": ["#FakeNews", "#Research"],
+            "created_at": now,
+            "fetched_at": now,
+            "sentiment": {"label": "negative", "score": -0.6},
+        },
+        {
+            "id": "twitter_demo_2",
+            "source": "twitter",
+            "platform": "twitter",
+            "title": None,
+            "text": "Exciting developments in renewable energy! Solar power costs hit record low worldwide.",
+            "author": "green_tech",
+            "upvotes": 0,
+            "comments_count": 45,
+            "retweets": 892,
+            "likes": 3421,
+            "url": "https://twitter.com/i/status/demo2",
+            "subreddit": None,
+            "hashtags": ["#Solar", "#CleanEnergy"],
+            "created_at": now,
+            "fetched_at": now,
+            "sentiment": {"label": "positive", "score": 0.92},
+        },
+        {
+            "id": "reddit_demo_3",
+            "source": "reddit",
+            "platform": "reddit",
+            "title": "Climate change report shows alarming trends",
+            "text": "The latest IPCC report indicates that global temperatures could rise by 2.7C by 2100 without immediate action.",
+            "author": "climate_watch",
+            "upvotes": 4521,
+            "comments_count": 1203,
+            "retweets": 0,
+            "likes": 0,
+            "url": "https://reddit.com/r/worldnews/demo3",
+            "subreddit": "worldnews",
+            "hashtags": ["#ClimateChange"],
+            "created_at": now,
+            "fetched_at": now,
+            "sentiment": {"label": "negative", "score": -0.75},
+        },
+    ]
 
+    demo_trends = [
+        {"_id": "AI & Technology", "count": 1523, "avg_engagement": 892.5, "platform": "reddit"},
+        {"_id": "Climate Change", "count": 987, "avg_engagement": 654.2, "platform": "reddit"},
+        {"_id": "Mental Health", "count": 756, "avg_engagement": 432.1, "platform": "twitter"},
+        {"_id": "Renewable Energy", "count": 543, "avg_engagement": 321.8, "platform": "twitter"},
+        {"_id": "Space Exploration", "count": 432, "avg_engagement": 289.4, "platform": "reddit"},
+    ]
+
+    demo_sentiment = [
+        {"_id": "positive", "count": 2},
+        {"_id": "neutral", "count": 1},
+        {"_id": "negative", "count": 2},
+    ]
+
+    if mongodb_available and db is not None:
+        existing = await db["raw_posts"].count_documents({})
+        if existing > 0:
+            return
+        for post in demo_posts:
+            await db["raw_posts"].insert_one(post)
+        for trend in demo_trends:
+            await db["trends"].insert_one(trend)
+        for s in demo_sentiment:
+            await db["sentiment"].insert_one(s)
+        print("[Database] Seeded demo data into MongoDB")
+    else:
+        if len(_in_memory_data["raw_posts"]) > 0:
+            return
         for post in demo_posts:
             await raw_posts_collection.insert_one(post)
-
-        demo_trends = [
-            {"_id": "AI & Technology", "count": 1523, "avg_engagement": 892.5, "platform": "reddit"},
-            {"_id": "Climate Change", "count": 987, "avg_engagement": 654.2, "platform": "reddit"},
-            {"_id": "Mental Health", "count": 756, "avg_engagement": 432.1, "platform": "twitter"},
-            {"_id": "Renewable Energy", "count": 543, "avg_engagement": 321.8, "platform": "twitter"},
-            {"_id": "Space Exploration", "count": 432, "avg_engagement": 289.4, "platform": "reddit"},
-        ]
         for trend in demo_trends:
             await trends_collection.insert_one(trend)
-
-        demo_sentiment = [
-            {"_id": "positive", "count": 2},
-            {"_id": "neutral", "count": 1},
-            {"_id": "negative", "count": 2},
-        ]
         for s in demo_sentiment:
             await sentiment_collection.insert_one(s)
-
         print("[Database] Seeded demo data for in-memory storage")
