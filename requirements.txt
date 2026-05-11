@@ -1,0 +1,38 @@
+# Core Backend
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+
+# Database
+motor==3.7.0
+pymongo==4.10.1
+
+# Task Queue
+celery==5.4.0
+redis==5.2.1
+
+# Data Collection
+praw==7.8.1
+tweepy==4.15.0
+
+# ML & NLP
+torch==2.6.0
+transformers==4.48.0
+scikit-learn==1.6.1
+spacy==3.8.7
+bertopic==0.16.4
+vaderSentiment==3.3.2
+langdetect==1.0.9
+numpy==2.2.1
+pandas==2.2.3
+
+# Fact Checking
+requests==2.32.3
+httpx==0.28.1
+
+# Utilities
+python-multipart==0.0.20
+pyjwt==2.10.1
+passlib[bcrypt]==1.7.4

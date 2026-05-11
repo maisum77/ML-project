@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 245, 245, 245;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+.card {
+  @apply bg-white rounded-lg shadow-md p-6;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition;
+}
+
+.badge {
+  @apply inline-block px-2 py-1 text-xs font-semibold rounded-full;
+}
+
+.badge-real {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-fake {
+  @apply bg-red-100 text-red-800;
+}
+
+.badge-positive {
+  @apply bg-green-100 text-green-700;
+}
+
+.badge-negative {
+  @apply bg-red-100 text-red-700;
+}
+
+.badge-neutral {
+  @apply bg-gray-100 text-gray-700;
+}
