@@ -37,7 +37,7 @@ export default function SentimentTimeline() {
   if (loading) return <div className="card">Loading sentiment timeline...</div>;
 
   const chartData = {
-    labels: sentiment.map((s) => s._id || "Unknown"),
+    labels: sentiment.map((s) => s.label || "Unknown"),
     datasets: [
       {
         label: "Post Count",

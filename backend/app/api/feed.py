@@ -17,7 +17,7 @@ async def get_feed(
     if platform:
         query["platform"] = platform
 
-    cursor = raw_posts_collection.find(query).sort("upvotes", -1).skip(offset).limit(limit)
+    cursor = (await raw_posts_collection.find(query)).sort("upvotes", -1).skip(offset).limit(limit)
     posts = await cursor.to_list(length=limit)
 
     if sentiment:

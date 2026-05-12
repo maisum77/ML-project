@@ -96,7 +96,7 @@ async def trace_origin(post_id: str) -> Optional[Dict]:
 
 
 async def get_propagation_for_topic(topic: str) -> Dict:
-    cursor = raw_posts_collection.find({})
+    cursor = await raw_posts_collection.find({})
     posts = await cursor.to_list(length=500)
 
     topic_lower = topic.lower()

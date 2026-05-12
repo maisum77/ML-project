@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Download spaCy model
+        run: python -m spacy download en_core_web_sm
+
+      - name: Run tests
+        env:
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
+          AWS_REGION: us-east-1
+        run: |
+          pytest tests/ -v --tb=short --cov=backend --cov=ml_models --cov=data_collection --cov=data_processing --cov=fact_check
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install linters
+        run: |
+          pip install ruff black
+
+      - name: Run Ruff
+        run: ruff check .
+
+      - name: Run Black
+        run: black --check .
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint

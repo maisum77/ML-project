@@ -29,7 +29,7 @@ async def _fetch_fresh_data(platform: Optional[str] = None):
             print(f"[Trending] Twitter fetch error: {e}")
 
     if not posts:
-        cursor = raw_posts_collection.find({}).sort("upvotes", -1).limit(20)
+        cursor = (await raw_posts_collection.find({})).sort("upvotes", -1).limit(20)
         return await cursor.to_list(length=20)
 
     unique = deduplicator.filter_duplicates(posts)

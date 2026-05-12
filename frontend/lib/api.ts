@@ -21,6 +21,21 @@ export const getTrendingRealtime = async (hours = 1) => {
   return data;
 };
 
+export const getTopicClusters = async (platform?: string) => {
+  const { data } = await api.get("/trending/clusters", { params: { platform } });
+  return data;
+};
+
+export const compareTopics = async (topics: string[], platform?: string) => {
+  const { data } = await api.get("/trending/compare", { params: { topics: topics.join(","), platform } });
+  return data;
+};
+
+export const getExportReport = async (platform?: string) => {
+  const { data } = await api.get("/export/report", { params: { platform }, responseType: "blob" });
+  return data;
+};
+
 export const getSentiment = async (topic: string, hours = 24) => {
   const { data } = await api.get(`/sentiment/${topic}`, { params: { hours } });
   return data;
@@ -33,6 +48,11 @@ export const getOverallSentiment = async (platform?: string, hours = 24) => {
 
 export const classifyText = async (text: string, source?: string) => {
   const { data } = await api.post("/classify", { text, source });
+  return data;
+};
+
+export const classifyTextDetailed = async (text: string, source?: string) => {
+  const { data } = await api.post("/classify/detailed", { text, source });
   return data;
 };
 

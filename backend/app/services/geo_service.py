@@ -164,7 +164,7 @@ def extract_location_for_post(post: dict) -> Optional[Dict]:
 
 async def get_geo_distribution(topic: Optional[str] = None, platform: Optional[str] = None) -> List[Dict]:
     from backend.app.core.database import raw_posts_collection
-    cursor = raw_posts_collection.find({})
+    cursor = await raw_posts_collection.find({})
     posts = await cursor.to_list(length=500)
 
     if platform:
@@ -214,7 +214,7 @@ async def get_geo_distribution(topic: Optional[str] = None, platform: Optional[s
 async def get_globe_data() -> Dict:
     from backend.app.core.database import raw_posts_collection
 
-    cursor = raw_posts_collection.find({})
+    cursor = await raw_posts_collection.find({})
     posts = await cursor.to_list(length=500)
 
     arcs = []

@@ -22,8 +22,17 @@ _propagation_table = dynamodb.Table(settings.dynamodb_propagation_table)
 
 
 def _serialize_value(v):
+    from decimal import Decimal
     if isinstance(v, datetime):
         return v.isoformat()
+    if isinstance(v, float):
+        return Decimal(str(v))
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, dict):
+        return {k: _serialize_value(val) for k, val in v.items()}
+    if isinstance(v, list):
+        return [_serialize_value(item) for item in v]
     return v
 
 
@@ -217,7 +226,7 @@ class DynamoDBAggregateCursor:
         for stage in self.pipeline:
             if "$match" in stage:
                 match = stage["$match"]
-                if match.get("processed", {}).get("$ne") == True or match.get("processed") is False:
+                if match.get("processed", {}).get("$ne") in (True, "true") or match.get("processed") in (False, "false"):
                     self._filter_unprocessed = True
             if "$limit" in stage:
                 self._limit = stage["$limit"]

@@ -34,7 +34,7 @@ export default function FakeRealChart() {
   if (loading) return <div className="card">Loading sentiment data...</div>;
 
   const data = {
-    labels: sentiment.map((s) => s._id || "Unknown"),
+    labels: sentiment.map((s) => s.label || "Unknown"),
     datasets: [
       {
         data: sentiment.map((s) => s.count),

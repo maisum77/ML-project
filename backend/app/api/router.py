@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.app.api import trending, sentiment, classify, feed, export, propagation, geo, authority
+from backend.app.api import trending, sentiment, classify, feed, export, propagation, geo, authority, auth
 
 router = APIRouter()
 
@@ -11,3 +11,4 @@ router.include_router(export.router, prefix="/export", tags=["Export"])
 router.include_router(propagation.router, prefix="/propagation", tags=["Propagation"])
 router.include_router(geo.router, prefix="/geo", tags=["Geo"])
 router.include_router(authority.router, prefix="/authority", tags=["Authority"])
+router.include_router(auth.router, prefix="/auth", tags=["Authentication"])

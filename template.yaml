@@ -54,6 +54,7 @@ Resources:
           DYNAMODB_SENTIMENT_TABLE: !Ref SentimentTable
           DYNAMODB_FACT_CHECKS_TABLE: !Ref FactChecksTable
           DYNAMODB_PROPAGATION_TABLE: !Ref PropagationTable
+          DYNAMODB_USERS_TABLE: !Ref UsersTable
           REDDIT_CLIENT_ID: !Ref RedditClientId
           REDDIT_CLIENT_SECRET: !Ref RedditClientSecret
           X_BEARER_TOKEN: !Ref XBearerToken
@@ -74,6 +75,8 @@ Resources:
             TableName: !Ref FactChecksTable
         - DynamoDBCrudPolicy:
             TableName: !Ref PropagationTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
       Events:
         Api:
           Type: HttpApi
@@ -221,6 +224,18 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "socialpulse_users_${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: username
+          AttributeType: S
+      KeySchema:
+        - AttributeName: username
+          KeyType: HASH
 
 Outputs:
   ApiUrl:
