@@ -17,37 +17,30 @@ export default function AuthorityBadge({
   verified,
   reasons,
 }: AuthorityBadgeProps) {
-  const getColors = () => {
-    if (isAuthentic) return "border-green-400 bg-green-50";
-    if (authorityScore >= 50) return "border-yellow-400 bg-yellow-50";
-    return "border-gray-300 bg-gray-50";
+  const getBadgeStyle = () => {
+    if (isAuthentic) return "bg-ink text-newsprint border-ink";
+    if (authorityScore >= 50) return "border-2 border-ink";
+    return "border border-newsprint-muted text-neutral-600";
   };
 
   const getLabel = () => {
-    if (authorType === "official") return "Official Source";
+    if (authorType === "official") return "Official";
     if (authorType === "org") return "Organization";
     if (authorType === "journalist") return "Journalist";
     return "Public";
   };
 
-  const getIcon = () => {
-    if (isAuthentic) return "check-badge";
-    if (verified) return "verified";
-    if (authorityScore >= 60) return "info";
-    return "person";
-  };
-
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${getColors()} text-xs`}>
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 border ${getBadgeStyle()} font-sans text-[10px] uppercase tracking-widest font-semibold`}>
       {isAuthentic ? (
-        <span className="text-green-600 font-bold">Authentic</span>
+        <span className="text-newsprint font-bold">Authentic</span>
       ) : (
-        <span className="text-gray-500">{getLabel()}</span>
+        <span>{getLabel()}</span>
       )}
-      <span className="text-gray-400">|</span>
-      <span className="font-medium text-gray-700">{authorityScore}/100</span>
+      <span className="text-neutral-400">|</span>
+      <span className="font-mono font-bold">{authorityScore}/100</span>
       {reasons && reasons.length > 0 && (
-        <span className="text-gray-400 cursor-help" title={reasons.join(", ")}>
+        <span className="text-neutral-400 cursor-help" title={reasons.join(", ")}>
           ?
         </span>
       )}

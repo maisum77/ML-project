@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from typing import Optional
-from backend.app.services.geo_service import get_geo_distribution, get_globe_data
+from backend.app.services.geo_service import get_geo_distribution, get_globe_data, get_topic_globe_data
 
 router = APIRouter()
 
@@ -14,6 +14,12 @@ async def get_topic_geo(topic: str, platform: Optional[str] = Query(None)):
         "total_locations": len(distribution),
         "total_posts": sum(p["count"] for p in distribution),
     }
+
+
+@router.get("/topic/{topic}/globe")
+async def get_topic_globe(topic: str):
+    data = await get_topic_globe_data(topic)
+    return data
 
 
 @router.get("/globe")

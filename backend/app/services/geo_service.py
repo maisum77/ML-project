@@ -274,3 +274,89 @@ async def get_globe_data() -> Dict:
         "points": list(points.values()),
         "arcs": arcs,
     }
+
+
+async def get_topic_globe_data(topic: str) -> Dict:
+    from backend.app.core.database import raw_posts_collection
+
+    cursor = await raw_posts_collection.find({})
+    posts = await cursor.to_list(length=500)
+
+    topic_lower = topic.lower()
+    posts = [
+        p for p in posts
+        if topic_lower in ((p.get("title") or "") + " " + (p.get("text") or "")).lower()
+        or topic_lower in " ".join(p.get("hashtags", [])).lower()
+        or topic_lower in (p.get("subreddit") or "").lower()
+    ]
+
+    arcs = []
+    points = {}
+
+    posts_with_locations = []
+    for post in posts:
+        lat = post.get("location_lat")
+        lng = post.get("location_lng")
+        if lat is None or lng is None:
+            location = extract_location_for_post(post)
+            if location:
+                lat, lng = location["lat"], location["lng"]
+            else:
+                continue
+
+        posts_with_locations.append(post)
+        key = f"{round(lat, 1)}_{round(lng, 1)}"
+        if key not in points:
+            points[key] = {"lat": lat, "lng": lng, "size": 0, "sentiment": {"positive": 0, "neutral": 0, "negative": 0}, "name": ""}
+        points[key]["size"] += 1
+        sentiment = post.get("sentiment", {}).get("label", "neutral")
+        points[key]["sentiment"][sentiment] += 1
+        loc_name = None
+        if post.get("location_lat") and post.get("location_lng"):
+            loc = extract_location_for_post(post)
+            if loc:
+                loc_name = loc.get("name")
+        else:
+            location = extract_location_for_post(post)
+            if location:
+                loc_name = location.get("name")
+        if loc_name and not points[key]["name"]:
+            points[key]["name"] = loc_name
+
+    sorted_posts = sorted(posts_with_locations, key=lambda x: x.get("created_at", ""), reverse=True)
+    for post in sorted_posts:
+        parent_id = post.get("parent_id")
+        if parent_id:
+            origin = post.get("origin_post_id")
+            if origin:
+                origin_post = None
+                origin_lat = origin_lng = None
+                for op in posts:
+                    if op.get("id") == origin:
+                        origin_post = op
+                        break
+                if origin_post:
+                    origin_lat = origin_post.get("location_lat")
+                    origin_lng = origin_post.get("location_lng")
+                    if origin_lat is None:
+                        loc = extract_location_for_post(origin_post)
+                        if loc:
+                            origin_lat, origin_lng = loc["lat"], loc["lng"]
+
+                current_lat = post.get("location_lat")
+                current_lng = post.get("location_lng")
+
+                if origin_lat and origin_lng and current_lat and current_lng:
+                    arcs.append({
+                        "startLat": origin_lat,
+                        "startLng": origin_lng,
+                        "endLat": current_lat,
+                        "endLng": current_lng,
+                    })
+
+    return {
+        "topic": topic,
+        "points": list(points.values()),
+        "arcs": arcs,
+        "total_posts": len(posts_with_locations),
+    }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Bell } from "lucide-react";
 
 interface Match {
   keyword: string;
@@ -47,45 +48,45 @@ export default function NotificationBadge() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-lg hover:bg-gray-100 transition"
+        className="relative p-2 border border-ink min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-ink hover:text-newsprint transition-all duration-200"
         title="Notifications"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
+        <Bell className="h-5 w-5" strokeWidth={1.5} />
         {count > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+          <span className="absolute -top-1 -right-1 bg-editorial-red text-newsprint font-sans text-[10px] font-bold w-5 h-5 flex items-center justify-center">
             {count}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-80 bg-white border rounded-lg shadow-lg z-50">
-          <div className="p-3 border-b font-semibold text-sm">Keyword Alerts</div>
+        <div className="absolute right-0 top-12 w-80 bg-newsprint border border-ink z-50 shadow-hard">
+          <div className="p-4 border-b-4 border-ink font-serif font-bold">
+            Keyword Alerts
+          </div>
           {data && data.matches.length > 0 ? (
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto scrollbar-hide">
               {data.matches.map((m) => (
-                <div key={m.keyword} className="px-3 py-2 border-b hover:bg-gray-50">
+                <div key={m.keyword} className="px-4 py-3 border-b border-ink hover:bg-neutral-100 transition-colors duration-200">
                   <div className="flex items-center gap-2">
-                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">
+                    <span className="bg-editorial-red text-newsprint px-2 py-0.5 font-sans text-[10px] uppercase tracking-widest font-bold">
                       {m.keyword}
                     </span>
-                    <span className="text-xs text-gray-500">{m.count} new post{m.count !== 1 ? "s" : ""}</span>
+                    <span className="font-mono text-xs text-neutral-400">{m.count} new post{m.count !== 1 ? "s" : ""}</span>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1 truncate">{m.latest_title}</p>
+                  <p className="font-body text-xs text-neutral-600 mt-1 truncate">{m.latest_title}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-4 text-center text-sm text-gray-400">
+            <div className="p-6 text-center font-mono text-xs uppercase tracking-widest text-neutral-400">
               No keyword alerts triggered. Add alerts in your Profile.
             </div>
           )}
-          <div className="p-2 border-t text-center">
+          <div className="p-3 border-t border-ink text-center">
             <button
               onClick={() => { fetchNotifications(); setOpen(false); }}
-              className="text-xs text-blue-600 hover:underline"
+              className="btn-ghost inline-block"
             >
               Refresh
             </button>

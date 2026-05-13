@@ -81,6 +81,11 @@ export const getGeoDistribution = async (topic?: string, platform?: string) => {
   return data;
 };
 
+export const getTopicGeoGlobe = async (topic: string) => {
+  const { data } = await api.get(`/geo/topic/${encodeURIComponent(topic)}/globe`);
+  return data;
+};
+
 export const getGlobeData = async () => {
   const { data } = await api.get("/geo/globe");
   return data;

@@ -3,6 +3,16 @@ from typing import Optional
 from backend.app.core.database import sentiment_collection, raw_posts_collection
 
 
+def _parse_ts(ts_str):
+    try:
+        ts = datetime.fromisoformat(ts_str)
+    except (ValueError, TypeError):
+        return None
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return ts
+
+
 async def get_sentiment_by_topic(topic: str, hours: int = 24):
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
 
@@ -14,11 +24,8 @@ async def get_sentiment_by_topic(topic: str, hours: int = 24):
         ts_str = item.get("timestamp") or item.get("created_at")
         if not ts_str:
             continue
-        try:
-            ts = datetime.fromisoformat(ts_str)
-        except (ValueError, TypeError):
-            continue
-        if ts < cutoff:
+        ts = _parse_ts(ts_str)
+        if ts is None or ts < cutoff:
             continue
 
         item_topic = item.get("subreddit") or (
@@ -55,11 +62,8 @@ async def get_overall_sentiment(platform: Optional[str] = None, hours: int = 24)
         ts_str = item.get("timestamp") or item.get("created_at")
         if not ts_str:
             continue
-        try:
-            ts = datetime.fromisoformat(ts_str)
-        except (ValueError, TypeError):
-            continue
-        if ts < cutoff:
+        ts = _parse_ts(ts_str)
+        if ts is None or ts < cutoff:
             continue
 
         if platform and item.get("platform") != platform:

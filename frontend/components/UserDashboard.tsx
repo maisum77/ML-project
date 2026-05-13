@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../lib/auth";
+import { LogOut, Bell, Plus, X } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -67,49 +68,55 @@ export default function UserDashboard() {
   };
 
   if (!user) return null;
-  if (loading) return <div className="card">Loading dashboard...</div>;
+  if (loading) return <div className="font-mono text-xs uppercase tracking-widest text-neutral-500 py-4">Loading dashboard...</div>;
+
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   return (
     <div className="space-y-6">
-      {/* Profile Card */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
+      <div className="border border-ink p-6">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold">{user.username}</h2>
-            <p className="text-gray-500 text-sm">{user.email}</p>
+            <h2 className="font-serif text-3xl font-black tracking-tighter">{user.username}</h2>
+            <p className="font-mono text-xs text-neutral-400 uppercase tracking-widest mt-1">{user.email}</p>
           </div>
-          <button onClick={logout} className="text-sm text-gray-500 hover:text-red-600">
+          <button onClick={logout} className="btn-secondary inline-flex items-center gap-2">
+            <LogOut className="h-4 w-4" strokeWidth={1.5} />
             Sign Out
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <div className="text-2xl font-bold text-blue-600">{savedAnalyses.length}</div>
-            <div className="text-xs text-gray-500">Saved Analyses</div>
+        <div className="grid grid-cols-12 gap-0 border border-ink">
+          <div className="col-span-6 border-r border-b border-ink p-6 text-center">
+            <div className="font-serif text-4xl font-black tracking-tighter">{savedAnalyses.length}</div>
+            <div className="label-uppercase mt-1">Saved Analyses</div>
           </div>
-          <div className="bg-orange-50 rounded-lg p-3">
-            <div className="text-2xl font-bold text-orange-600">{keywordAlerts.length}</div>
-            <div className="text-xs text-gray-500">Keyword Alerts</div>
+          <div className="col-span-6 border-b border-ink p-6 text-center">
+            <div className="font-serif text-4xl font-black tracking-tighter">{keywordAlerts.length}</div>
+            <div className="label-uppercase mt-1">Keyword Alerts</div>
           </div>
         </div>
       </div>
 
-      {/* Keyword Alerts */}
-      <div className="card">
-        <h3 className="font-semibold mb-3">Keyword Alerts</h3>
-        <p className="text-gray-500 text-xs mb-3">
+      <div className="border border-ink p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Bell className="h-5 w-5 text-ink" strokeWidth={1.5} />
+          <h3 className="font-serif text-xl font-black">Keyword Alerts</h3>
+        </div>
+        <p className="font-body text-neutral-500 text-xs mb-4">
           Set keywords to monitor. When trending topics match, they will be highlighted.
         </p>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-6">
           <input
             type="text"
             value={newKeyword}
             onChange={(e) => setNewKeyword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addAlert()}
             placeholder="Add a keyword (e.g., AI, vaccine, climate)"
-            className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            className="flex-1 newsprint-input"
+            style={{ borderRadius: 0 }}
           />
-          <button onClick={addAlert} className="btn-primary text-sm">
+          <button onClick={addAlert} className="btn-primary inline-flex items-center gap-2">
+            <Plus className="h-4 w-4" strokeWidth={1.5} />
             Add
           </button>
         </div>
@@ -118,31 +125,31 @@ export default function UserDashboard() {
             {keywordAlerts.map((kw) => (
               <span
                 key={kw}
-                className="badge bg-orange-100 text-orange-800 cursor-pointer hover:bg-orange-200"
+                className="border border-ink px-3 py-1.5 font-mono text-xs inline-flex items-center gap-2 cursor-pointer hover:bg-editorial-red hover:text-newsprint hover:border-editorial-red transition-colors duration-200 group"
                 onClick={() => removeAlert(kw)}
                 title="Click to remove"
               >
-                {kw} &times;
+                {kw}
+                <X className="h-3 w-3 opacity-0 group-hover:opacity-100" strokeWidth={1.5} />
               </span>
             ))}
           </div>
         ) : (
-          <p className="text-gray-400 text-sm">No alerts set. Add keywords above.</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">No alerts set. Add keywords above.</p>
         )}
       </div>
 
-      {/* Saved Analyses */}
-      <div className="card">
-        <h3 className="font-semibold mb-3">Saved Analyses</h3>
+      <div className="border border-ink p-6">
+        <h3 className="font-serif text-xl font-black mb-4">Saved Analyses</h3>
         {savedAnalyses.length > 0 ? (
-          <div className="space-y-3">
+          <div className="divide-y divide-ink">
             {savedAnalyses.map((analysis, i) => (
-              <div key={i} className="border rounded-lg p-3 hover:bg-gray-50">
+              <div key={i} className="py-3 hover:bg-neutral-100 transition-colors duration-200 px-2 -mx-2">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-sm">
+                  <span className="font-serif font-bold text-sm">
                     {analysis.data?.topic || analysis.data?.text?.substring(0, 40) || `Analysis #${i + 1}`}
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-neutral-400">
                     {analysis.saved_at ? new Date(analysis.saved_at).toLocaleDateString() : ""}
                   </span>
                 </div>
@@ -150,7 +157,7 @@ export default function UserDashboard() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-400 text-sm">
+          <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
             No saved analyses yet. Classify text and save results to see them here.
           </p>
         )}

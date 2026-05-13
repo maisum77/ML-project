@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getTrendingRealtime } from "../lib/api";
+import { TrendingUp } from "lucide-react";
 
 export default function TrendingTopics() {
   const [topics, setTopics] = useState<any[]>([]);
@@ -24,22 +25,36 @@ export default function TrendingTopics() {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) return <div className="card">Loading trending topics...</div>;
+  if (loading) return <div className="font-mono text-xs uppercase tracking-widest text-neutral-500 py-4">Loading trending topics...</div>;
 
   return (
-    <div className="card">
-      <h2 className="text-xl font-semibold mb-4">Trending Topics</h2>
+    <div>
       {topics.length === 0 ? (
-        <p className="text-gray-500">No trending data available</p>
+        <p className="font-body text-neutral-500 text-sm">No trending data available</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-0">
           {topics.map((topic, i) => (
-            <li key={topic._id || i} className="border-b pb-2">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{topic._id || "Unknown"}</span>
-                <span className="text-sm text-gray-500">
-                  {topic.count} posts | Avg engagement: {Math.round(topic.avg_engagement || 0)}
-                </span>
+            <li key={topic._id || i} className="border-b border-ink py-3 last:border-b-0 group">
+              <div className="flex justify-between items-start">
+                <div className="flex items-start gap-3">
+                  <span className="font-mono text-xs text-neutral-400 mt-0.5 min-w-[2rem]">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <span className="font-serif font-bold text-lg group-hover:text-editorial-red transition-colors duration-200">
+                      {topic._id || "Unknown"}
+                    </span>
+                    {i === 0 && (
+                      <span className="ml-2 bg-editorial-red text-newsprint px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-widest font-bold">
+                        Hot
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right font-mono text-xs text-neutral-500">
+                  <div>{topic.count} posts</div>
+                  <div className="text-neutral-400">eng: {Math.round(topic.avg_engagement || 0)}</div>
+                </div>
               </div>
             </li>
           ))}

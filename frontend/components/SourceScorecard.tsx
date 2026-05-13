@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Search, Filter } from "lucide-react";
 
 interface Source {
   handle: string;
@@ -46,8 +47,8 @@ export default function SourceScorecard() {
     fetchScorecard();
   }, []);
 
-  if (loading) return <div className="card">Loading authority scorecard...</div>;
-  if (!data) return <div className="card text-gray-500">No authority data available</div>;
+  if (loading) return <div className="font-mono text-xs uppercase tracking-widest text-neutral-500 py-4">Loading authority scorecard...</div>;
+  if (!data) return <div className="font-mono text-xs uppercase tracking-widest text-neutral-500">No authority data available</div>;
 
   const filtered = data.sources.filter((s) => {
     const matchesFilter = filter === "all" || s.type === filter;
@@ -55,120 +56,106 @@ export default function SourceScorecard() {
     return matchesFilter && matchesSearch;
   });
 
-  const typeColor: Record<string, string> = {
-    official: "bg-blue-100 text-blue-800",
-    journalist: "bg-purple-100 text-purple-800",
-    org: "bg-green-100 text-green-800",
-    government: "bg-red-100 text-red-800",
-    academic: "bg-yellow-100 text-yellow-800",
-    organization: "bg-green-100 text-green-800",
-  };
-
-  const platformIcon: Record<string, string> = {
-    twitter: "\uD83D\uDC26",
-    reddit: "\uD83D\uDCC4",
-  };
+  const stats = [
+    { label: "Tracked Sources", value: data.total_sources },
+    { label: "Twitter/X Sources", value: data.twitter_sources },
+    { label: "Reddit Sources", value: data.reddit_sources },
+    { label: "Authority Domains", value: data.authority_domains },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-blue-600">{data.total_sources}</div>
-          <div className="text-sm text-gray-500 mt-1">Tracked Sources</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-sky-600">{data.twitter_sources}</div>
-          <div className="text-sm text-gray-500 mt-1">Twitter/X Sources</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-orange-600">{data.reddit_sources}</div>
-          <div className="text-sm text-gray-500 mt-1">Reddit Sources</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-green-600">{data.authority_domains}</div>
-          <div className="text-sm text-gray-500 mt-1">Authority Domains</div>
-        </div>
+      <div className="grid grid-cols-12 gap-0 border border-ink">
+        {stats.map((stat, i) => (
+          <div key={stat.label} className={`col-span-6 md:col-span-3 p-6 border-b md:border-b-0 border-ink ${
+            i < stats.length - 1 ? "border-r-0 md:border-r" : ""
+          }`}>
+            <div className="label-uppercase text-neutral-400 mb-2">{stat.label}</div>
+            <div className="font-serif text-3xl lg:text-5xl font-black tracking-tighter">{stat.value}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Type Distribution */}
-      <div className="card">
-        <h3 className="font-semibold mb-3">Source Type Distribution</h3>
-        <div className="flex flex-wrap gap-4">
-          {Object.entries(data.type_distribution).map(([type, count]) => (
-            <div key={type} className="flex items-center gap-2">
-              <span className={`badge ${typeColor[type] || "badge-neutral"}`}>
-                {type}
-              </span>
-              <span className="text-sm text-gray-600">{count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="card">
-        <div className="flex flex-col md:flex-row gap-3 mb-4">
-          <input
-            type="text"
-            placeholder="Search sources..."
-            className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <div className="flex gap-2">
-            {["all", "official", "journalist"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm capitalize transition ${
-                  filter === f
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {f}
-              </button>
+      {Object.keys(data.type_distribution).length > 0 && (
+        <div className="border border-ink p-6">
+          <div className="label-uppercase mb-4">Source Type Distribution</div>
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(data.type_distribution).map(([type, count]) => (
+              <div key={type} className="border border-ink px-3 py-2 flex items-center gap-2">
+                <span className="font-sans text-xs uppercase tracking-widest font-semibold">{type}</span>
+                <span className="font-mono text-lg font-bold">{count}</span>
+              </div>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Source Table */}
+      <div className="border border-ink">
+        <div className="p-6 border-b border-ink">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" strokeWidth={1.5} />
+              <input
+                type="text"
+                placeholder="Search sources..."
+                className="w-full newsprint-input pl-10"
+                style={{ borderRadius: 0 }}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              {["all", "official", "journalist"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-4 py-2 font-sans text-xs uppercase tracking-widest font-semibold transition-all duration-200 min-h-[44px] ${
+                    filter === f
+                      ? "bg-ink text-newsprint"
+                      : "border border-ink hover:bg-ink hover:text-newsprint"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full">
             <thead>
-              <tr className="border-b text-left text-gray-500">
-                <th className="pb-2 pr-4">Source</th>
-                <th className="pb-2 pr-4">Platform</th>
-                <th className="pb-2 pr-4">Type</th>
-                <th className="pb-2">Authority</th>
+              <tr className="border-b-4 border-ink">
+                <th className="py-3 px-6 text-left label-uppercase">Source</th>
+                <th className="py-3 px-6 text-left label-uppercase">Platform</th>
+                <th className="py-3 px-6 text-left label-uppercase">Type</th>
+                <th className="py-3 px-6 text-left label-uppercase">Authority</th>
               </tr>
             </thead>
             <tbody>
               {filtered.slice(0, 50).map((source, i) => (
-                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2 pr-4 font-medium">{source.handle}</td>
-                  <td className="py-2 pr-4">
-                    <span className="text-lg mr-1">{platformIcon[source.platform]}</span>
-                    <span className="capitalize text-gray-600">{source.platform}</span>
+                <tr key={i} className="border-b border-ink hover:bg-neutral-100 transition-colors duration-200">
+                  <td className="py-3 px-6 font-serif font-bold">{source.handle}</td>
+                  <td className="py-3 px-6">
+                    <span className="font-sans text-xs uppercase tracking-widest">{source.platform}</span>
                   </td>
-                  <td className="py-2 pr-4">
-                    <span className={`badge ${typeColor[source.type] || "badge-neutral"}`}>
+                  <td className="py-3 px-6">
+                    <span className="border border-ink px-2 py-0.5 font-sans text-[10px] uppercase tracking-widest">
                       {source.type}
                     </span>
                   </td>
-                  <td className="py-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
+                  <td className="py-3 px-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 h-2 bg-newsprint-muted">
                         <div
-                          className={`h-2 rounded-full ${
-                            source.authority_score >= 80 ? "bg-green-500" :
-                            source.authority_score >= 60 ? "bg-yellow-500" : "bg-red-500"
+                          className={`h-2 ${
+                            source.authority_score >= 80 ? "bg-ink" :
+                            source.authority_score >= 60 ? "bg-neutral-500" : "bg-editorial-red"
                           }`}
                           style={{ width: `${source.authority_score}%` }}
                         />
                       </div>
-                      <span className="text-gray-600">{source.authority_score}</span>
+                      <span className="font-mono text-sm font-bold">{source.authority_score}</span>
                     </div>
                   </td>
                 </tr>
@@ -176,25 +163,28 @@ export default function SourceScorecard() {
             </tbody>
           </table>
           {filtered.length > 50 && (
-            <p className="text-gray-400 text-xs mt-2">Showing 50 of {filtered.length} sources</p>
+            <div className="p-4 font-mono text-xs text-neutral-400 uppercase tracking-widest text-center border-t border-ink">
+              Showing 50 of {filtered.length} sources
+            </div>
           )}
         </div>
       </div>
 
-      {/* Authority Domains */}
-      <div className="card">
-        <h3 className="font-semibold mb-3">Authority Domains</h3>
-        <div className="flex flex-wrap gap-2">
-          {data.domains.map((d, i) => (
-            <span
-              key={i}
-              className={`badge ${typeColor[d.type] || "badge-neutral"}`}
-            >
-              {d.domain}
-            </span>
-          ))}
+      {data.domains.length > 0 && (
+        <div className="border border-ink p-6">
+          <div className="label-uppercase mb-4">Authority Domains</div>
+          <div className="flex flex-wrap gap-2">
+            {data.domains.map((d, i) => (
+              <span
+                key={i}
+                className="border border-ink px-3 py-1 font-mono text-xs hover:bg-ink hover:text-newsprint transition-colors duration-200 cursor-default"
+              >
+                {d.domain}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Download, FileText } from "lucide-react";
 
 export default function ReportExport() {
   const [loading, setLoading] = useState(false);
@@ -30,31 +31,49 @@ export default function ReportExport() {
   };
 
   return (
-    <div className="card">
-      <h2 className="text-xl font-semibold mb-3">Export Analysis Report</h2>
-      <p className="text-sm text-gray-500 mb-4">
-        Download a comprehensive text report of all analysis data, including sentiment distribution, authority breakdown, and topic clusters.
-      </p>
-      <div className="flex gap-3 items-end">
-        <div>
-          <label className="text-xs text-gray-500 block mb-1">Platform filter (optional)</label>
-          <select
-            value={platform}
-            onChange={(e) => setPlatform(e.target.value)}
-            className="border rounded px-3 py-2 text-sm"
-          >
-            <option value="">All platforms</option>
-            <option value="twitter">Twitter/X</option>
-            <option value="reddit">Reddit</option>
-          </select>
+    <div className="border border-ink p-8">
+      <div className="grid grid-cols-12 gap-8">
+        <div className="col-span-12 md:col-span-7">
+          <h3 className="font-serif text-2xl font-black mb-4">
+            Comprehensive Analysis Report
+          </h3>
+          <p className="font-body text-neutral-600 text-sm leading-relaxed drop-cap">
+            Download a comprehensive text report of all analysis data, including sentiment distribution, authority breakdown, and topic clusters. The report is generated in real-time and includes the most current data available.
+          </p>
+          <div className="mt-6 border-t-4 border-ink pt-6">
+            <div className="flex gap-3 items-end">
+              <div>
+                <label className="label-uppercase block mb-2">Platform filter (optional)</label>
+                <select
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  className="newsprint-input"
+                  style={{ borderRadius: 0 }}
+                >
+                  <option value="">All platforms</option>
+                  <option value="twitter">Twitter/X</option>
+                  <option value="reddit">Reddit</option>
+                </select>
+              </div>
+              <button
+                onClick={downloadReport}
+                disabled={loading}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" strokeWidth={1.5} />
+                {loading ? "Generating..." : "Download Report"}
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={downloadReport}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Generating..." : "Download Report"}
-        </button>
+        <div className="col-span-12 md:col-span-5 flex items-center justify-center">
+          <div className="border-4 border-ink p-8 text-center">
+            <FileText className="h-16 w-16 mx-auto mb-4 text-neutral-400" strokeWidth={0.5} />
+            <div className="label-uppercase text-neutral-400 mb-1">Format</div>
+            <div className="font-serif text-xl font-black">Plain Text</div>
+            <div className="font-mono text-xs text-neutral-400 mt-1">.txt</div>
+          </div>
+        </div>
       </div>
     </div>
   );

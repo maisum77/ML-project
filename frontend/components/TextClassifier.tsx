@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { classifyText, getOverallSentiment } from "../lib/api";
+import { getOverallSentiment } from "../lib/api";
+import { AlertTriangle, CheckCircle, XCircle, HelpCircle } from "lucide-react";
 
 interface LinguisticFlag {
   flag: string;
@@ -51,34 +52,34 @@ interface ClassifyResult {
 
 function RiskBadge({ level }: { level: string }) {
   const styles: Record<string, string> = {
-    high: "bg-red-100 text-red-800 border-red-300",
-    medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    low: "bg-green-100 text-green-800 border-green-300",
+    high: "bg-editorial-red text-newsprint",
+    medium: "border-2 border-ink",
+    low: "bg-ink text-newsprint",
   };
   return (
-    <span className={`badge border ${styles[level] || styles.medium}`}>
+    <span className={`px-2 py-0.5 font-sans text-[10px] uppercase tracking-widest font-bold ${styles[level] || styles.medium}`}>
       {level.toUpperCase()} RISK
     </span>
   );
 }
 
 function VerdictIcon({ label }: { label: string }) {
-  if (label === "likely_reliable") return <span className="text-3xl">&#9989;</span>;
-  if (label === "likely_unreliable") return <span className="text-3xl">&#10060;</span>;
-  return <span className="text-3xl">&#9888;&#65039;</span>;
+  if (label === "likely_reliable") return <CheckCircle className="h-8 w-8 text-ink" strokeWidth={1.5} />;
+  if (label === "likely_unreliable") return <XCircle className="h-8 w-8 text-editorial-red" strokeWidth={1.5} />;
+  return <AlertTriangle className="h-8 w-8 text-neutral-500" strokeWidth={1.5} />;
 }
 
 function SignalBar({ label, value, max = 100 }: { label: string; value: number; max?: number }) {
   const pct = Math.min((value / max) * 100, 100);
-  const color = pct > 60 ? "bg-red-400" : pct > 30 ? "bg-yellow-400" : "bg-green-400";
+  const color = pct > 60 ? "bg-editorial-red" : pct > 30 ? "bg-neutral-500" : "bg-ink";
   return (
     <div className="mb-2">
-      <div className="flex justify-between text-xs text-gray-600 mb-1">
-        <span>{label}</span>
-        <span>{value.toFixed(1)}%</span>
+      <div className="flex justify-between font-mono text-xs mb-1">
+        <span className="uppercase tracking-widest text-neutral-500">{label}</span>
+        <span className="font-semibold">{value.toFixed(1)}%</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div className={`${color} h-2 rounded-full`} style={{ width: `${pct}%` }} />
+      <div className="w-full bg-newsprint-muted h-2">
+        <div className={`${color} h-2 transition-all`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -122,17 +123,16 @@ export default function TextClassifier() {
 
   return (
     <div className="space-y-6">
-      <div className="card">
-        <h2 className="text-xl font-semibold mb-4">Text Classification & Misinformation Detector</h2>
-        <p className="text-gray-500 text-sm mb-4">
+      <div className="border border-ink p-6 bg-newsprint">
+        <p className="font-body text-neutral-600 text-sm mb-6 drop-cap">
           Paste any text to analyze its credibility, sentiment, emotional language, topic relevance, and fact-check status.
         </p>
 
-        <div className="mb-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Text to Analyze</label>
+        <div className="mb-4">
+          <label className="label-uppercase block mb-2">Text to Analyze</label>
           <textarea
-            className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            rows={4}
+            className="w-full border-b-2 border-ink bg-transparent px-3 py-2 font-body text-sm focus-visible:bg-neutral-100 focus-visible:outline-none min-h-[120px]"
+            style={{ borderRadius: 0 }}
             placeholder="Enter a news article, social media post, or any text to analyze..."
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -140,17 +140,18 @@ export default function TextClassifier() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Source (optional)</label>
+          <label className="label-uppercase block mb-2">Source (optional)</label>
           <input
             type="text"
-            className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full newsprint-input"
+            style={{ borderRadius: 0 }}
             placeholder="e.g., @WHO, cnn.com, reddit/r/science"
             value={source}
             onChange={(e) => setSource(e.target.value)}
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleClassify}
             disabled={loading || !text.trim()}
@@ -158,12 +159,12 @@ export default function TextClassifier() {
           >
             {loading ? "Analyzing..." : "Analyze Text"}
           </button>
-          <span className="text-xs text-gray-400">Try a sample:</span>
+          <span className="label-uppercase text-neutral-400">Try a sample:</span>
           {sampleTexts.map((s) => (
             <button
               key={s.label}
               onClick={() => { setText(s.text); setSource(""); }}
-              className="text-xs text-blue-600 hover:underline"
+              className="text-xs font-sans text-ink underline-offset-4 decoration-2 decoration-editorial-red hover:underline uppercase tracking-widest"
             >
               {s.label}
             </button>
@@ -172,170 +173,174 @@ export default function TextClassifier() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">{error}</div>
+        <div className="border-4 border-editorial-red bg-newsprint p-4 text-editorial-red font-mono text-xs">
+          <AlertTriangle className="h-4 w-4 inline mr-2" strokeWidth={1.5} />
+          {error}
+        </div>
       )}
 
       {result && (
         <div className="space-y-4">
-          {/* Verdict Card */}
-          <div className={`card border-l-4 ${
-            result.verdict.risk_level === "high" ? "border-l-red-500 bg-red-50" :
-            result.verdict.risk_level === "medium" ? "border-l-yellow-500 bg-yellow-50" :
-            "border-l-green-500 bg-green-50"
-          }`}>
-            <div className="flex items-center gap-4">
+          <div className={`border-4 ${
+            result.verdict.risk_level === "high" ? "border-editorial-red" :
+            result.verdict.risk_level === "medium" ? "border-neutral-500" :
+            "border-ink"
+          } p-6 bg-newsprint`}>
+            <div className="flex items-start gap-4">
               <VerdictIcon label={result.verdict.label} />
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-semibold capitalize">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-serif text-2xl font-black capitalize">
                     {result.verdict.label.replace(/_/g, " ")}
                   </h3>
                   <RiskBadge level={result.verdict.risk_level} />
                 </div>
-                <p className="text-gray-700 text-sm">{result.verdict.explanation}</p>
-                <p className="text-gray-500 text-xs mt-1">Confidence: {result.verdict.confidence}%</p>
+                <p className="font-body text-neutral-600">{result.verdict.explanation}</p>
+                <p className="font-mono text-xs text-neutral-400 mt-1">Confidence: {result.verdict.confidence}%</p>
               </div>
             </div>
           </div>
 
-          {/* Analysis Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Sentiment */}
-            <div className="card">
-              <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Sentiment</h3>
+          <div className="grid grid-cols-12 gap-0 border border-ink">
+            <div className="col-span-12 md:col-span-6 border-r-0 md:border-r border-b md:border-b-0 border-ink p-6">
+              <div className="label-uppercase mb-3">Sentiment</div>
               <div className="flex items-center gap-3 mb-2">
-                <span className={`badge ${result.analysis.sentiment.label === "positive" ? "badge-positive" : result.analysis.sentiment.label === "negative" ? "badge-negative" : "badge-neutral"}`}>
+                <span className={`border px-2 py-0.5 font-sans text-[10px] uppercase tracking-widest font-bold ${
+                  result.analysis.sentiment.label === "positive" ? "border-ink bg-ink text-newsprint" :
+                  result.analysis.sentiment.label === "negative" ? "border-editorial-red bg-editorial-red text-newsprint" :
+                  "border-newsprint-muted text-neutral-600"
+                }`}>
                   {result.analysis.sentiment.label}
                 </span>
-                <span className="text-gray-600 text-sm">Score: {result.analysis.sentiment.score}%</span>
+                <span className="font-mono text-sm">Score: {result.analysis.sentiment.score}%</span>
               </div>
-              <div className="text-xs text-gray-400">Model: {result.analysis.sentiment.model}</div>
+              <div className="font-mono text-[10px] text-neutral-400 uppercase tracking-widest">
+                Model: {result.analysis.sentiment.model}
+              </div>
             </div>
 
-            {/* Credibility */}
-            <div className="card">
-              <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Credibility</h3>
+            <div className="col-span-12 md:col-span-6 p-6">
+              <div className="label-uppercase mb-3">Credibility</div>
               <div className="flex items-center gap-3 mb-2">
                 <RiskBadge level={result.analysis.credibility.risk_level} />
-                <span className="text-gray-600 text-sm">Confidence: {result.analysis.credibility.confidence}%</span>
+                <span className="font-mono text-sm">Confidence: {result.analysis.credibility.confidence}%</span>
               </div>
-              <div className="text-sm text-gray-500 capitalize">{result.analysis.credibility.label.replace(/_/g, " ")}</div>
+              <div className="font-body text-sm text-neutral-600 capitalize">{result.analysis.credibility.label.replace(/_/g, " ")}</div>
             </div>
+          </div>
 
-            {/* Linguistic Signals */}
-            <div className="card">
-              <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Linguistic Analysis</h3>
+          <div className="grid grid-cols-12 gap-0 border-l border-r border-b border-ink">
+            <div className="col-span-12 md:col-span-6 border-r-0 md:border-r border-b md:border-b-0 border-ink p-6">
+              <div className="label-uppercase mb-3">Linguistic Analysis</div>
               <SignalBar label="Sensationalism Score" value={result.analysis.linguistic_signals.score} />
               {result.analysis.linguistic_signals.flags.length > 0 ? (
-                <div className="space-y-1">
+                <div className="space-y-1 mt-3">
                   {result.analysis.linguistic_signals.flags.map((f, i) => (
-                    <div key={i} className="flex justify-between text-xs">
-                      <span className="text-gray-700">{f.flag.replace(/_/g, " ")}</span>
-                      <span className="text-red-600">+{f.score} ({f.count}x)</span>
+                    <div key={i} className="flex justify-between font-mono text-xs border-b border-newsprint-muted py-1">
+                      <span className="uppercase tracking-widest">{f.flag.replace(/_/g, " ")}</span>
+                      <span className="text-editorial-red font-bold">+{f.score} ({f.count}x)</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-green-600 text-sm">No suspicious patterns detected</p>
+                <p className="font-mono text-xs uppercase tracking-widest text-ink">No suspicious patterns detected</p>
               )}
-              <div className="mt-2 text-xs text-gray-400">
+              <div className="mt-2 font-mono text-[10px] text-neutral-400 uppercase tracking-widest">
                 {result.analysis.linguistic_signals.word_count} words &middot; avg {result.analysis.linguistic_signals.avg_sentence_length} words/sentence
               </div>
             </div>
 
-            {/* Emotional Analysis */}
-            <div className="card">
-              <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Emotional Language</h3>
+            <div className="col-span-12 md:col-span-6 p-6">
+              <div className="label-uppercase mb-3">Emotional Language</div>
               <div className="mb-2">
-                <span className="text-sm font-medium capitalize">{result.analysis.emotional_analysis.primary_emotion}</span>
-                <span className="text-gray-500 text-sm ml-2">
+                <span className="font-serif font-bold capitalize">{result.analysis.emotional_analysis.primary_emotion}</span>
+                <span className="font-mono text-xs text-neutral-500 ml-2">
                   Subjectivity: {(result.analysis.emotional_analysis.subjectivity * 100).toFixed(0)}%
                 </span>
               </div>
               {Object.keys(result.analysis.emotional_analysis.emotion_scores).length > 0 ? (
                 <div className="space-y-1">
                   {Object.entries(result.analysis.emotional_analysis.emotion_scores).map(([emo, count]) => (
-                    <div key={emo} className="flex justify-between text-xs">
+                    <div key={emo} className="flex justify-between font-mono text-xs">
                       <span className="capitalize">{emo}</span>
                       <span>{count} word{count > 1 ? "s" : ""}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">No strong emotional language detected</p>
+                <p className="font-body text-neutral-500 text-sm">No strong emotional language detected</p>
               )}
               <SignalBar label="Emotional Intensity" value={result.analysis.emotional_analysis.emotional_intensity} />
             </div>
+          </div>
 
-            {/* Source Analysis */}
-            <div className="card">
-              <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Source Analysis</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Source Type</span>
-                  <span className="font-medium capitalize">{result.analysis.source_analysis.source_type}</span>
+          <div className="grid grid-cols-12 gap-0 border-l border-r border-b border-ink">
+            <div className="col-span-12 md:col-span-6 border-r-0 md:border-r border-b md:border-b-0 border-ink p-6">
+              <div className="label-uppercase mb-3">Source Analysis</div>
+              <div className="space-y-3">
+                <div className="flex justify-between border-b border-newsprint-muted py-2">
+                  <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">Source Type</span>
+                  <span className="font-serif font-bold capitalize">{result.analysis.source_analysis.source_type}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Authority Score</span>
-                  <span className="font-medium">{result.analysis.source_analysis.authority_score}/100</span>
+                <div className="flex justify-between border-b border-newsprint-muted py-2">
+                  <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">Authority Score</span>
+                  <span className="font-mono font-bold">{result.analysis.source_analysis.authority_score}/100</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Attribution</span>
-                  <span className="font-medium">{result.analysis.source_analysis.has_attribution ? "Present" : "None"}</span>
+                <div className="flex justify-between border-b border-newsprint-muted py-2">
+                  <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">Attribution</span>
+                  <span className="font-serif font-bold">{result.analysis.source_analysis.has_attribution ? "Present" : "None"}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Quotes</span>
-                  <span className="font-medium">{result.analysis.source_analysis.has_quotes ? "Present" : "None"}</span>
+                <div className="flex justify-between py-2">
+                  <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">Quotes</span>
+                  <span className="font-serif font-bold">{result.analysis.source_analysis.has_quotes ? "Present" : "None"}</span>
                 </div>
                 <SignalBar label="Attribution Score" value={result.analysis.source_analysis.attribution_score} />
               </div>
             </div>
 
-            {/* Facts & Topics */}
-            <div className="card">
-              <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Fact-Check & Topics</h3>
-              <div className="mb-3">
-                <div className="text-xs text-gray-500 mb-1">Fact-Check Status</div>
+            <div className="col-span-12 md:col-span-6 p-6">
+              <div className="label-uppercase mb-3">Fact-Check & Topics</div>
+              <div className="mb-4">
+                <div className="label-uppercase text-neutral-400 mb-2">Fact-Check Status</div>
                 {result.analysis.fact_check_results.claims_checked > 0 ? (
                   <div className="space-y-2">
                     {result.analysis.fact_check_results.matches.map((m, i) => (
-                      <div key={i} className="bg-gray-50 rounded p-2 text-xs">
-                        <div className="font-medium">{m.verdict}</div>
-                        <div className="text-gray-500">{m.publisher}</div>
+                      <div key={i} className="border border-ink p-3">
+                        <div className="font-serif font-bold text-sm">{m.verdict}</div>
+                        <div className="font-mono text-xs text-neutral-500">{m.publisher}</div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-500">
+                  <div className="font-mono text-xs uppercase tracking-widest text-neutral-500">
                     {result.analysis.fact_check_results.google_fact_check_available ? "No matching claims found" : "Fact-check API unavailable"}
                   </div>
                 )}
                 {result.analysis.fact_check_results.claimbuster_available && result.analysis.fact_check_results.claimbuster_score !== undefined && (
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className="mt-2 font-mono text-xs text-neutral-400">
                     Checkworthiness score: {(result.analysis.fact_check_results.claimbuster_score * 100).toFixed(0)}%
                   </div>
                 )}
               </div>
               <div>
-                <div className="text-xs text-gray-500 mb-1">Detected Topics</div>
+                <div className="label-uppercase text-neutral-400 mb-2">Detected Topics</div>
                 {result.analysis.topic_detection.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {result.analysis.topic_detection.map((t, i) => (
-                      <span key={i} className="badge bg-blue-100 text-blue-800">
+                      <span key={i} className="border border-ink px-2 py-0.5 font-sans text-[10px] uppercase tracking-widest">
                         {t.topic} ({t.relevance.toFixed(0)}%)
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span className="text-sm text-gray-400">No topics detected</span>
+                  <span className="font-mono text-xs text-neutral-400">No topics detected</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Signal Weights */}
-          <div className="card">
-            <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Analysis Breakdown</h3>
+          <div className="border border-ink p-6">
+            <div className="label-uppercase mb-3">Analysis Breakdown</div>
             <div className="space-y-2">
               <SignalBar label="Linguistic Signals" value={result.verdict.signal_weights.linguistic * 100} />
               <SignalBar label="Emotional Language" value={result.verdict.signal_weights.emotional * 100} />
@@ -345,36 +350,35 @@ export default function TextClassifier() {
             </div>
           </div>
 
-          {/* Entities */}
           {((result.analysis.entity_extraction.people?.length || 0) +
             (result.analysis.entity_extraction.organizations?.length || 0) +
             (result.analysis.entity_extraction.locations?.length || 0)) > 0 && (
-            <div className="card">
-              <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">Entity Extraction</h3>
+            <div className="border border-ink p-6">
+              <div className="label-uppercase mb-3">Entity Extraction</div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">People</div>
+                  <div className="label-uppercase text-neutral-400 mb-2">People</div>
                   {result.analysis.entity_extraction.people.length > 0 ? (
                     result.analysis.entity_extraction.people.map((p, i) => (
-                      <span key={i} className="badge bg-purple-100 text-purple-800 mr-1">{p}</span>
+                      <span key={i} className="border border-ink px-2 py-0.5 font-mono text-xs mr-1 inline-block mb-1">{p}</span>
                     ))
-                  ) : <span className="text-xs text-gray-400">None detected</span>}
+                  ) : <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-widest">None detected</span>}
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Organizations</div>
+                  <div className="label-uppercase text-neutral-400 mb-2">Organizations</div>
                   {result.analysis.entity_extraction.organizations.length > 0 ? (
                     result.analysis.entity_extraction.organizations.map((o, i) => (
-                      <span key={i} className="badge bg-blue-100 text-blue-800 mr-1">{o}</span>
+                      <span key={i} className="border border-ink px-2 py-0.5 font-mono text-xs mr-1 inline-block mb-1">{o}</span>
                     ))
-                  ) : <span className="text-xs text-gray-400">None detected</span>}
+                  ) : <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-widest">None detected</span>}
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Locations</div>
+                  <div className="label-uppercase text-neutral-400 mb-2">Locations</div>
                   {result.analysis.entity_extraction.locations.length > 0 ? (
                     result.analysis.entity_extraction.locations.map((l, i) => (
-                      <span key={i} className="badge bg-green-100 text-green-800 mr-1">{l}</span>
+                      <span key={i} className="border border-ink px-2 py-0.5 font-mono text-xs mr-1 inline-block mb-1">{l}</span>
                     ))
-                  ) : <span className="text-xs text-gray-400">None detected</span>}
+                  ) : <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-widest">None detected</span>}
                 </div>
               </div>
             </div>

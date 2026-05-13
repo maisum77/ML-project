@@ -3,65 +3,84 @@
 import { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 
+interface GlobePoint {
+  lat: number;
+  lng: number;
+  size: number;
+  sentiment: { positive: number; neutral: number; negative: number };
+  name?: string;
+}
+
+interface GlobeArc {
+  startLat: number;
+  startLng: number;
+  endLat: number;
+  endLng: number;
+}
+
 interface GlobeData {
-  points: Array<{
-    lat: number;
-    lng: number;
-    size: number;
-    sentiment: { positive: number; neutral: number; negative: number };
-  }>;
-  arcs: Array<{
-    startLat: number;
-    startLng: number;
-    endLat: number;
-    endLng: number;
-  }>;
+  topic?: string;
+  points: GlobePoint[];
+  arcs: GlobeArc[];
+  total_posts?: number;
 }
 
 const MAP_URLS = {
-  earthDark: "https://unpkg.com/three-globe/example/img/earth-night.jpg",
-  earthDay: "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg",
-  topology: "https://unpkg.com/three-globe/example/img/earth-topology.png",
+  earthDark:
+    "https://unpkg.com/three-globe/example/img/earth-night.jpg",
+  earthDay:
+    "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg",
+  topology:
+    "https://unpkg.com/three-globe/example/img/earth-topology.png",
 };
 
-export default function GlobeView({ data }: { data: GlobeData | null }) {
+export default function TopicGlobe({
+  data,
+  title,
+}: {
+  data: GlobeData | null;
+  title?: string;
+}) {
   const globeRef = useRef<any>();
-  const [hoveredPoint, setHoveredPoint] = useState<any>(null);
-  const [dimensions, setDimensions] = useState({ width: 600, height: 500 });
+  const [hoveredPoint, setHoveredPoint] = useState<GlobePoint | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 500, height: 400 });
 
   useEffect(() => {
     const updateDimensions = () => {
       const w = window.innerWidth;
-      if (w < 640) setDimensions({ width: 340, height: 300 });
+      if (w < 768) setDimensions({ width: 340, height: 300 });
       else if (w < 1024) setDimensions({ width: 500, height: 400 });
-      else setDimensions({ width: 700, height: 520 });
+      else setDimensions({ width: 600, height: 450 });
     };
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  if (!data) {
+  if (!data || !data.points || data.points.length === 0) {
     return (
-      <div className="border border-ink p-6 text-center bg-ink text-newsprint">
-        <p className="font-mono text-xs uppercase tracking-widest">Loading globe data...</p>
+      <div className="border border-ink p-6 text-center">
+        <p className="font-mono text-xs uppercase tracking-widest text-neutral-500">
+          No geographic data available for this topic
+        </p>
       </div>
     );
   }
 
-  const pointsData = (data.points || []).map((p) => {
+  const pointsData = data.points.map((p) => {
     const total = p.sentiment.positive + p.sentiment.neutral + p.sentiment.negative;
     const posRatio = total > 0 ? p.sentiment.positive / total : 0;
     const negRatio = total > 0 ? p.sentiment.negative / total : 0;
     let color = "#737373";
     if (negRatio > 0.6) color = "#CC0000";
     else if (posRatio > 0.6) color = "#F9F9F7";
+
     return {
       lat: p.lat,
       lng: p.lng,
-      size: Math.max(0.3, Math.min(2.5, p.size * 0.15)),
+      size: Math.max(0.3, Math.min(2, p.size * 0.15)),
       color,
-      label: `${p.sentiment.positive} pos / ${p.sentiment.neutral} neu / ${p.sentiment.negative} neg`,
+      label: `${p.name || "Unknown"} — ${p.sentiment.positive} pos / ${p.sentiment.neutral} neu / ${p.sentiment.negative} neg`,
       ...p,
     };
   });
@@ -74,16 +93,19 @@ export default function GlobeView({ data }: { data: GlobeData | null }) {
   }));
 
   return (
-    <div className="border border-ink">
-      <div className="border-b border-newsprint-muted bg-ink p-4">
-        <h2 className="font-serif text-lg font-bold text-newsprint">
-          Global Distribution
-        </h2>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-neutral-400 mt-1">
-          Sentiment mapping across geographic regions — drag to rotate
-        </p>
-      </div>
-      <div className="bg-ink relative">
+    <div className="border border-ink bg-ink">
+      {title && (
+        <div className="border-b border-neutral-700 p-4">
+          <h3 className="font-serif text-lg font-bold text-newsprint">
+            {title}
+          </h3>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-neutral-400 mt-1">
+            Geographic sentiment distribution
+            {data.total_posts ? ` · ${data.total_posts} posts` : ""}
+          </p>
+        </div>
+      )}
+      <div className="relative">
         <Globe
           ref={globeRef}
           width={dimensions.width}
@@ -98,7 +120,7 @@ export default function GlobeView({ data }: { data: GlobeData | null }) {
           pointRadius="size"
           pointColor="color"
           onPointHover={(point: any) => {
-            if (point) setHoveredPoint(point);
+            if (point) setHoveredPoint(point as unknown as GlobePoint);
             else setHoveredPoint(null);
           }}
           arcsData={arcsData}
@@ -116,32 +138,27 @@ export default function GlobeView({ data }: { data: GlobeData | null }) {
           enablePointerInteraction
         />
         {hoveredPoint && (
-          <div className="absolute top-2 left-2 bg-newsprint border border-ink p-2 shadow-hard max-w-[220px]">
-            <p className="font-sans text-xs font-bold mb-1">
-              {hoveredPoint.lat.toFixed(1)}, {hoveredPoint.lng.toFixed(1)}
-            </p>
-            <div className="flex gap-3 font-mono text-[10px]">
+          <div className="absolute top-2 left-2 bg-newsprint border border-ink p-2 shadow-hard max-w-[200px]">
+            <p className="font-sans text-xs font-bold">{hoveredPoint.name || "Unknown"}</p>
+            <div className="flex gap-3 mt-1 font-mono text-[10px]">
               <span className="text-newsprint">{hoveredPoint.sentiment.positive} pos</span>
               <span className="text-neutral-600">{hoveredPoint.sentiment.neutral} neu</span>
               <span className="text-editorial-red">{hoveredPoint.sentiment.negative} neg</span>
             </div>
-            <p className="font-mono text-[10px] text-neutral-500 mt-1">
-              {hoveredPoint.size} post{hoveredPoint.size !== 1 ? "s" : ""}
-            </p>
           </div>
         )}
       </div>
-      <div className="bg-ink flex justify-center gap-6 p-3 border-t border-neutral-700">
+      <div className="flex justify-center gap-6 p-3 border-t border-neutral-700">
         <span className="flex items-center gap-2 font-mono text-xs text-newsprint">
-          <span className="w-3 h-3 bg-newsprint inline-block" style={{ borderRadius: "50%" }} />
+          <span className="w-3 h-3 bg-newsprint rounded-full inline-block" />
           Positive
         </span>
         <span className="flex items-center gap-2 font-mono text-xs text-neutral-400">
-          <span className="w-3 h-3 bg-neutral-500 inline-block" style={{ borderRadius: "50%" }} />
+          <span className="w-3 h-3 bg-neutral-500 rounded-full inline-block" />
           Neutral
         </span>
         <span className="flex items-center gap-2 font-mono text-xs text-editorial-red">
-          <span className="w-3 h-3 bg-editorial-red inline-block" style={{ borderRadius: "50%" }} />
+          <span className="w-3 h-3 bg-editorial-red rounded-full inline-block" />
           Negative
         </span>
       </div>

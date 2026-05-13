@@ -34,7 +34,7 @@ export default function SentimentTimeline() {
     fetchSentiment();
   }, []);
 
-  if (loading) return <div className="card">Loading sentiment timeline...</div>;
+  if (loading) return <div className="font-mono text-xs uppercase tracking-widest text-neutral-500 py-4">Loading sentiment timeline...</div>;
 
   const chartData = {
     labels: sentiment.map((s) => s.label || "Unknown"),
@@ -42,26 +42,43 @@ export default function SentimentTimeline() {
       {
         label: "Post Count",
         data: sentiment.map((s) => s.count),
-        backgroundColor: ["#22c55e", "#6b7280", "#ef4444"],
+        backgroundColor: ["#111111", "#E5E5E0", "#CC0000"],
+        borderWidth: 1,
+        borderColor: "#111111",
       },
     ],
   };
 
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: "#111111",
+        titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+        bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+      },
+    },
+    scales: {
+      x: {
+        ticks: { font: { family: "'Inter', sans-serif", size: 10 }, color: "#737373" },
+        grid: { display: false },
+        border: { color: "#111111", width: 2 },
+      },
+      y: {
+        ticks: { font: { family: "'JetBrains Mono', monospace", size: 10 }, color: "#737373" },
+        grid: { color: "#E5E5E0" },
+        border: { color: "#111111", width: 2 },
+      },
+    },
+  };
+
   return (
-    <div className="card">
-      <h2 className="text-xl font-semibold mb-4">Sentiment Overview</h2>
+    <div>
       {sentiment.length === 0 ? (
-        <p className="text-gray-500">No data available</p>
+        <p className="font-body text-neutral-500 text-sm">No data available</p>
       ) : (
-        <Bar
-          data={chartData}
-          options={{
-            responsive: true,
-            plugins: {
-              legend: { display: false },
-            },
-          }}
-        />
+        <Bar data={chartData} options={options} />
       )}
     </div>
   );

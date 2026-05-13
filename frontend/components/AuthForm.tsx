@@ -31,58 +31,61 @@ export default function AuthForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8">
-      <div className="card">
-        <h2 className="text-xl font-semibold mb-4 text-center">
+    <div className="max-w-lg mx-auto">
+      <div className="border border-ink p-8 bg-newsprint">
+        <h2 className="font-serif text-3xl font-black text-center mb-2">
           {isLogin ? "Sign In" : "Create Account"}
         </h2>
-        <p className="text-gray-500 text-sm text-center mb-6">
+        <p className="font-body text-neutral-500 text-sm text-center mb-8">
           {isLogin
             ? "Sign in to save analyses and set keyword alerts"
             : "Join SocialPulse AI to track misinformation"}
         </p>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 mb-4">
+          <div className="border-2 border-editorial-red p-4 mb-6 font-mono text-xs text-editorial-red uppercase tracking-widest">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <label className="label-uppercase block mb-2">Username</label>
             <input
               type="text"
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full newsprint-input"
+              style={{ borderRadius: 0 }}
               placeholder="Enter your username"
             />
           </div>
 
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="label-uppercase block mb-2">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full newsprint-input"
+                style={{ borderRadius: 0 }}
                 placeholder="you@example.com"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="label-uppercase block mb-2">Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full newsprint-input"
+              style={{ borderRadius: 0 }}
               placeholder="Min 6 characters"
             />
           </div>
@@ -90,17 +93,17 @@ export default function AuthForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full btn-primary disabled:opacity-50"
+            className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center font-sans text-xs uppercase tracking-widest text-neutral-500">
           {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
           <button
             onClick={() => { setIsLogin(!isLogin); setError(""); }}
-            className="text-blue-600 hover:underline"
+            className="text-ink underline-offset-4 decoration-2 decoration-editorial-red hover:underline"
           >
             {isLogin ? "Register" : "Sign In"}
           </button>
